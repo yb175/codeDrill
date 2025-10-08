@@ -22,7 +22,7 @@ async function verificationConfirmationMail(req,res) {
     try{
         const {token} = req.params ;  
         const payload = jwt.verify(token,process.env.JWT_SECRET_KEY) ; 
-        res.cookie("token" , token , { httpOnly: true, maxAge: 4*24*60*60*1000} )
+        res.cookie("token" , token , { httpOnly: true, maxAge: 4*24*60*60*1000,sameSite : "lax"} ) ; 
         res.status(200).send({res : "login successfull"}) ; 
     }catch(err){
         res.send({err : err.message}) ; 

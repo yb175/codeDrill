@@ -46,6 +46,10 @@ async function verifyEmail(req,res){
             return res.status(400).send({res : "User already exists/verified"}) ; 
         }
         await userModel.create(decoded) ; 
+        const userInfo = await userModel.findOne({email}) ;
+        const payload = {id : userInfo._id , email : userInfo.email,role : userInfo.role} ;
+        const token = jwt.sign(payload,process.env.JWT_SECRET_KEY,{expiresIn : "4h"}) ;
+        res.cookie("token" , token , {httpOnly : true , maxAge : 4*24*60*60*1000,sameSite : "lax"}) ;
         res.status(200).send({res : "user created succesfully"}) ;
     }catch(err){
         return res.status(400).send({err : err.message}) ;

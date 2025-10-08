@@ -56,6 +56,10 @@ const UserSchema = new Schema({
         enum : ["admin","user","guest"], 
         default : "guest"
     },
+    isVerified : {
+        type : Boolean , 
+        default : false
+    },
     problemSolved : [problemSolvedSchema]
 },{timestamps : true}) 
 const userModel = mongoose.model('user',UserSchema) ; 

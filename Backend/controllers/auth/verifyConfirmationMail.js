@@ -1,32 +1,43 @@
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
+
 /**
- * Verifies a user's email address and logs them in.
+ * Handles login verification with email confirmation token.
  * 
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
+ * @param {Object} req - Express request object containing the confirmation token in `req.params`.
+ * @param {Object} res - Express response object.
+ * 
  * @returns {Promise<void>} Sends a JSON response to the client.
  * 
  * @example
  * // Success Response
  * // HTTP/1.1 200 OK
  * // Content-Type: application/json
- * // { "res": "login successful" }
- *
+ * // { "success": true, "message": "Login successful", "data": { "email": "user@example.com", "role": "user" } }
+ * 
  * @example
- * // Error Response (Invalid or Expired Token)
- * // HTTP/1.1 400 Bad Request
+ * // Error Response (Internal Server Error)
+ * // HTTP/1.1 500 Internal Server Error
  * // Content-Type: application/json
- * // { "err": "jwt expired" } or { "err": "invalid signature" }
+ * // { "success": false, "message": "Internal Server Error" }
  */
-async function verificationConfirmationMail(req,res) {
-    try{
-        const {token} = req.params ;  
-        const payload = jwt.verify(token,process.env.JWT_SECRET_KEY) ; 
-        res.cookie("token" , token , { httpOnly: true, maxAge: 4*24*60*60*1000,sameSite : "lax"} ) ; 
-        res.status(200).send({res : "login successfull"}) ; 
-    }catch(err){
-        res.send({err : err.message}) ; 
-    }
+async function verificationConfirmationMail(req, res) {
+  try {
+    const { token } = req.params;
+    const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 4 * 24 * 60 * 60 * 1000, // 4 days
+    });
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: { email: payload.email, role: payload.role },
+    });
+  } catch (err) {
+    console.error("Verification confirmation error:", err);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
 }
 
-export default verificationConfirmationMail ; 
+export default verificationConfirmationMail;

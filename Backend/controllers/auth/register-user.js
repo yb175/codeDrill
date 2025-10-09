@@ -12,62 +12,64 @@ import userModel from "../../models/auth/User.js";
 import transporter from "../../utils/transporter.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
 /**
- * Handles the registration of a new user.
- *
- * It first validates the request body, checks if the user already exists,
- * hashes the password, and sends a verification email with a JWT-based link.
- *
- * @async
- * @param {import('express').Request} req - The Express request object. Expects 'name', 'email', and 'password' in `req.body`.
- * @param {import('express').Response} res - The Express response object.
- * @returns {Promise<void>} Sends a response to the client.
- *
+ * Handles new user registration.
+ * 
+ * @param {Object} req - Express request object containing user registration details in `req.body`.
+ * @param {Object} res - Express response object.
+ * 
+ * @returns {Promise<void>} Sends a JSON response to the client.
+ * 
  * @example
- * // Success Response (Verification Email Sent)
+ * // Success Response
  * // HTTP/1.1 200 OK
  * // Content-Type: application/json
- * // { "res": "verification email sent" }
- *
- * @example
- * // Error Response (Validation Failure)
- * // HTTP/1.1 400 Bad Request
- * // Content-Type: application/json
- * // { "err": "Validation failed message" }
- *
+ * // { "success": true, "message": "Verification email sent", "data": { "email": "user@example.com" } }
+ * 
  * @example
  * // Error Response (User Already Exists)
  * // HTTP/1.1 400 Bad Request
  * // Content-Type: application/json
- * // { "res": "user Already exists in db" }
- *
+ * // { "success": false, "message": "A user with this email already exists." }
+ * 
  * @example
  * // Error Response (Server Error)
  * // HTTP/1.1 500 Internal Server Error
  * // Content-Type: application/json
- * // { "err": "Error message" }
+ * // { "success": false, "message": "Internal Server Error" }
  */
 export default async function register(req, res) {
   try {
-    const isValid = checkValidation(req.body, res);
-    if (isValid.err) {
-      return res.status(400).send(isValid.err);
+    // Validation check
+    const validationResult = checkValidation(req.body, res);
+    if (validationResult.err) {
+      return res.status(400).json({ success: false, message: validationResult.err });
     }
+
     const { name, email, password } = req.body;
-    const checkExistence = await userModel.findOne({ email: req.body.email });
-    if (!checkExistence) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      req.body.password = hashedPassword;
-      const verifiedUserToken = jwt.sign(req.body, process.env.JWT_SECRET_KEY, {
-        expiresIn: "3m",
-      });
-      const verificationLink = `${process.env.VERIFICATION_LINK_REGISTER}/${verifiedUserToken}`;
-      await transporter.sendMail({
-        from: '"Team Code Drills" <maddison53@ethereal.email>',
-        to: email,
-        subject: "Verify your account - Code Drills",
-        text: `From Team Code Drills — Here is your verification link. Click the link below to verify your account: ${verificationLink}`,
-        html: `
+
+    // Check if user already exists
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "A user with this email already exists." });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    req.body.password = hashedPassword;
+
+    // Generate verification token
+    const verifiedUserToken = jwt.sign(req.body, process.env.JWT_SECRET_KEY, { expiresIn: "3m" });
+    const verificationLink = `${process.env.VERIFICATION_LINK_REGISTER}/${verifiedUserToken}`;
+
+    // Send verification email
+    await transporter.sendMail({
+      from: '"Team Code Drills" <maddison53@ethereal.email>',
+      to: email,
+      subject: "Verify your account - Code Drills",
+      text: `From Team Code Drills — Here is your verification link. Click the link below to verify your account: ${verificationLink}`,
+      html: `
         <p>Hi ${name},</p>
         <p>From <b>Team Code Drills</b> — Here is your verification link:</p>
         <p><a href="${verificationLink}" target="_blank">Click here to verify your account</a></p>
@@ -75,17 +77,16 @@ export default async function register(req, res) {
         <br/>
         <p>– Team Code Drills</p>
       `,
-      });
-      return res.status(200).send({
-        res: "verification email sent",
-      });
-    }
-    return res.status(400).send({
-      res: "A user with this email already exists.",
     });
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification email sent",
+      data: { email },
+    });
+
   } catch (err) {
-    res.status(500).send({
-      err: err.message,
-    });
+    console.error("Register error:", err);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 }

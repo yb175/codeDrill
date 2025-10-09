@@ -1,40 +1,49 @@
 import transporter from "../../utils/transporter.js";
 import userModel from "../../models/auth/User.js";
 import jwt from "jsonwebtoken";
+
 /**
- * Sends a verification email to the user with a JWT-based link.
- *
- * @param {import('express').Request} req - The Express request object. Expects 'email' in `req.body`.
- * @param {import('express').Response} res - The Express response object.
+ * Sends a verification email to the user.
+ * 
+ * @param {Object} req - Express request object containing the user's email in `req.body`.
+ * @param {Object} res - Express response object.
+ * 
  * @returns {Promise<void>} Sends a JSON response to the client.
- *
+ * 
  * @example
  * // Success Response
  * // HTTP/1.1 200 OK
  * // Content-Type: application/json
- * // { "res": "Verification mail sent successfully" }
- *
+ * // { "success": true, "message": "Verification mail sent successfully", "data": { "email": "user@example.com" } }
+ * 
  * @example
  * // Error Response (User Not Found)
  * // HTTP/1.1 404 Not Found
  * // Content-Type: application/json
- * // { "err": "user not found" }
- *
+ * // { "success": false, "message": "User not found" }
+ * 
  * @example
- * // Error Response (Server Error)
+ * // Error Response (Internal Server Error)
  * // HTTP/1.1 500 Internal Server Error
  * // Content-Type: application/json
- * // { "err": "Error message" }
+ * // { "success": false, "message": "Internal Server Error" }
  */
-async function sendConfirmationMail(req, res) {
+export default async function sendConfirmationMail(req, res) {
   try {
     const { email } = req.body;
+
+    // Check if user exists
     const userInfo = await userModel.findOne({ email });
-    if (!userInfo) return res.status(404).send({ err: "user not found" });
-    const payload = { _id: userInfo._id, email: email, role: userInfo.role };
-    const token = jwt.sign(payload,process.env.JWT_SECRET_KEY, { expiresIn: "3m" });
+    if (!userInfo) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Create JWT token
+    const payload = { _id: userInfo._id, email: userInfo.email, role: userInfo.role };
+    const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: "3m" });
     const verificationLink = `${process.env.VERIFICATION_LINK_LOGIN}/${token}`;
-    // send mail
+
+    // Send verification email
     await transporter.sendMail({
       from: '"Team Code Drills" <maddison53@ethereal.email>',
       to: email,
@@ -49,10 +58,15 @@ async function sendConfirmationMail(req, res) {
         <p>– Team Code Drills</p>
       `,
     });
-    res.status(200).send({ res: "Verification mail sent successfully" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification mail sent successfully",
+      data: { email: userInfo.email },
+    });
+
   } catch (err) {
-    res.send({ err: err.message });
+    console.error("Send confirmation mail error:", err);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 }
-
-export default sendConfirmationMail ;

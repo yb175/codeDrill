@@ -6,6 +6,7 @@ import sendConfirmationMail from "../controllers/auth/sendConfirmationMail.js";
 import verificationConfirmationMail from "../controllers/auth/verifyConfirmationMail.js"; 
 import logout from "../controllers/auth/logout.js";
 import checkBlackList from "../middlewares/checkBlacklist.js";
+import changePassword from "../controllers/auth/changePassword.js";
 
 const userRouter = express.Router() ; 
 
@@ -29,7 +30,7 @@ userRouter.get('/login-verify/:token',verificationConfirmationMail) ;
 // forgot password
 
 // reset password 
-
+userRouter.patch('/reset-password',checkBlackList,changePassword) ; 
 // logout 
 userRouter.get('/logout',checkBlackList,logout) ; 
 

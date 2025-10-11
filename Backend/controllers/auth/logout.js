@@ -35,8 +35,13 @@ export default async function logout(req, res) {
     if (!token) {
       return res.status(400).json({ success: false, message: "No token found" });
     }
-
-    const payload = jwt.decode(token);
+    const payload = jwt.verify(token,process.env.JWT_SECRET_KEY); 
+    console.log(payload)
+    const ttl = Number(payload.exp) - Math.floor(Date.now() / 1000);
+    console.log(ttl)
+    if (ttl > 0) {
+      await redisClient.set(`token:${token}`, token, "EX", ttl);
+    }
 
     res.clearCookie("token", {
       httpOnly: true,
@@ -44,10 +49,6 @@ export default async function logout(req, res) {
       secure: false,
     });
 
-    const ttl = payload.exp - Math.floor(Date.now() / 1000);
-    if (ttl > 0) {
-      await redisClient.set(`token:${token}`, token, "EX", ttl);
-    }
 
     res.status(200).json({ success: true, message: "Logout successful" });
   } catch (err) {

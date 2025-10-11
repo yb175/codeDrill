@@ -54,7 +54,7 @@ async function changePassword(req, res) {
     }
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     await userModel.findOneAndUpdate({ email }, { password: newPasswordHash });
-    const payload = jwt.decode(token);
+    const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
     res.clearCookie("token", {
       httpOnly: true,
       sameSite: "Lax",

@@ -30,7 +30,7 @@
  */
 import mongoose from "mongoose";
 const {Schema} = mongoose ; 
-import problemSolvedSchema from "./problem.js";
+import problemSolvedSchema from "./Schema/problem.js";
 const UserSchema = new Schema({
     name: {
         type : String ,

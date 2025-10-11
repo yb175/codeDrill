@@ -5,7 +5,7 @@ import loginWithPassword from "../controllers/auth/loginWithPassword.js";
 import sendConfirmationMail from "../controllers/auth/sendConfirmationMail.js";
 import verificationConfirmationMail from "../controllers/auth/verifyConfirmationMail.js"; 
 import logout from "../controllers/auth/logout.js";
-import checkBlackList from "../middlewares/checkBlacklist.js";
+import checkBlackList from "../middlewares/userAuth.js";
 import changePassword from "../controllers/auth/changePassword.js";
 
 const userRouter = express.Router() ; 

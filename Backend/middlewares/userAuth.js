@@ -15,10 +15,15 @@ async function checkBlackList(req, res, next) {
     if (!token) {
       return res.status(401).json({ success: false, message: "User not logged in" });
     }
-
-    const blacklisted = await redisClient.get(`token:${token}`);
+    const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const {_id} = payload; 
+    const user = await User.findById(_id);
+    if(!user){
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const blacklisted = await redisClient.exists(`token:${token}`);
     if (blacklisted) {
-      return res.status(401).json({ success: false, message: "User not logged in" });
+      return res.status(401).send({ success: false, message: "Token blacklisted" });
     }
 
     // Token valid, continue to next middleware

@@ -58,7 +58,8 @@ export default async function register(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     req.body.password = hashedPassword;
-
+    req.body.role = "user";
+    
     // Generate verification token
     const verifiedUserToken = jwt.sign(req.body, process.env.JWT_SECRET_KEY, { expiresIn: "3m" });
     const verificationLink = `${process.env.VERIFICATION_LINK_REGISTER}/${verifiedUserToken}`;

@@ -49,7 +49,7 @@ async function loginWithPassword(req, res) {
     }
 
     const payload = { _id: userInfo._id, email: userInfo.email, role: userInfo.role };
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY);
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY,{ expiresIn: "4d" });
 
     res.cookie("token", accessToken, { httpOnly: true, maxAge: 4 * 24 * 60 * 60 * 1000 });
 

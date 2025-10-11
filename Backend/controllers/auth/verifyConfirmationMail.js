@@ -24,7 +24,10 @@ async function verificationConfirmationMail(req, res) {
   try {
     const { token } = req.params;
     const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    res.cookie("token", token, {
+    const newToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+      expiresIn: "4d",
+    })
+    res.cookie("token", newToken, {
       httpOnly: true,
       sameSite: "lax",
       maxAge: 4 * 24 * 60 * 60 * 1000, // 4 days

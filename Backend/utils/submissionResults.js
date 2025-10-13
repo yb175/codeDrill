@@ -8,7 +8,6 @@ import axios from "axios";
 async function getSubmissionResult(tokens) {
   try {
     const tokenString = tokens.map(t => t.token || t).join(",");
-    console.log(tokenString);
     if (!tokens) throw new Error("No token found");
 
     const options = {
@@ -30,7 +29,6 @@ async function getSubmissionResult(tokens) {
     while (attempts < maxAttempts) {
       const response = await axios.request(options);
       const submissions = response.data.submissions;
-      console.log(response.data) ; 
       const allFinished = submissions.every((item) => item && item.status.id > 2);
 
       if (allFinished) {

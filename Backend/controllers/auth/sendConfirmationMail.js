@@ -1,4 +1,4 @@
-import transporter from "../../utils/transporter.js";
+import transporter from "../../utils/user/transporter.js";
 import userModel from "../../models/auth/User.js";
 import jwt from "jsonwebtoken";
 

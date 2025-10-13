@@ -7,9 +7,9 @@
  * @requires bcrypt
  * @requires jsonwebtoken
  */
-import checkValidation from "../../utils/userValidation.js";
+import checkValidation from "../../utils/user/userValidation.js";
 import userModel from "../../models/auth/User.js";
-import transporter from "../../utils/transporter.js";
+import transporter from "../../utils/user/transporter.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 

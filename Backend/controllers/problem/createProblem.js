@@ -1,4 +1,4 @@
-import validateProblem from "../../utils/problemValidation.js";
+import validateProblem from "../../utils/problem/problemValidation.js";
 import problemModel from "../../models/problem/problemSchema.js";
 /**
  * Creates a new problem in the database.
@@ -9,11 +9,12 @@ import problemModel from "../../models/problem/problemSchema.js";
  */
 async function createProblem(req,res){
      try{
-     const {title,description, problemTags, companyTags, hints, acceptanceRate, visibleTestCases, hiddentestCases, boilerplate, problemCreater, difficulty,refrenceSol} = req.body;
+     const {title,description, problemTags, companyTags, hints, acceptanceRate, visibleTestCases, hiddentestCases, boilerplate, difficulty,refrenceSol} = req.body;
      const result = await validateProblem({refrenceSol, visibleTestCases}); 
      if(!result.success) return res.status(400).json({success:false, message: result.message});
      const count = await problemModel.countDocuments() ; 
-     await problemModel.create({title,problemNumber : count+1,description,problemTags,companyTags,hints,acceptanceRate,visibleTestCases,hiddentestCases,boilerplate,problemCreater,difficulty}) ; 
+     const problemCreater = req.result._id ;
+     await problemModel.create({title,problemNumber : count+1,description,problemTags,companyTags,hints,acceptanceRate,visibleTestCases,hiddentestCases,boilerplate,problemCreater,difficulty,refrenceSol}) ; 
      return res.status(200).json({success : true , message : 'problem created successfully'}) ;
      }catch(err){
           return res.status(500).json({success : false ,message : err.message}) ; 

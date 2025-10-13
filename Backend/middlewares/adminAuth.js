@@ -29,7 +29,7 @@ async function adminAuth(req,res,next) {
     if (blacklisted) {
       return res.status(401).send({ success: false, message: "Token blacklisted" });
     }
-
+    req.result = user;
     // Token valid, continue to next middleware
     next();
 

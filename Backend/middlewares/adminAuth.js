@@ -1,4 +1,6 @@
+import userModel from "../models/auth/User.js";
 import redisClient from "../models/redis/client.js";
+import jwt from "jsonwebtoken"
 /**
  * Checks if the user is an admin and if their token is blacklisted.
  * If the user is not an admin or the token is blacklisted, returns a 401 Unauthorized response.
@@ -16,7 +18,7 @@ async function adminAuth(req,res,next) {
     }
     const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
     const {_id} = payload; 
-    const user = await User.findById(_id);
+    const user = await userModel.findById(_id);
     if(!user){
       return res.status(404).json({ success: false, message: "User not found" });
     }

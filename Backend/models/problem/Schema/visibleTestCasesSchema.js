@@ -38,6 +38,13 @@ const visibleCaseSchema = new Schema({
     minlength: 1,
     maxlength: 200,
   },
+  output : {
+    type : String ,
+    required : true , 
+    trim : true , 
+    minlength : 1, 
+    maxlength : 200
+  },
   description: {
     type: String,
     trim: true,

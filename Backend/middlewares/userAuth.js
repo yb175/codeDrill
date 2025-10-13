@@ -1,4 +1,6 @@
+import userModel from "../models/auth/User.js";
 import redisClient from "../models/redis/client.js";
+import jwt from "jsonwebtoken"
 
 /**
  * Checks if the user's token is blacklisted in Redis.
@@ -17,7 +19,7 @@ async function checkBlackList(req, res, next) {
     }
     const payload = jwt.verify(token, process.env.JWT_SECRET_KEY);
     const {_id} = payload; 
-    const user = await User.findById(_id);
+    const user = await userModel.findById(_id);
     if(!user){
       return res.status(404).json({ success: false, message: "User not found" });
     }

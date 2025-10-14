@@ -10,7 +10,8 @@ import problemModel from "../../models/problem/problemSchema.js";
 async function createProblem(req,res){
      try{
      const {title,description, problemTags, companyTags, hints, acceptanceRate, visibleTestCases, hiddentestCases, boilerplate, difficulty,refrenceSol} = req.body;
-     const result = await validateProblem({refrenceSol, visibleTestCases}); 
+     const testCases = visibleTestCases.concat(hiddentestCases);
+     const result = await validateProblem({refrenceSol, testCases}); 
      if(!result.success) return res.status(400).json({success:false, message: result.message});
      const count = await problemModel.countDocuments() ; 
      const problemCreater = req.result._id ;

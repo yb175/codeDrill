@@ -2,19 +2,19 @@ import getLanguageCode from "./langCode.js";
 import axios from "axios";
 import getSubmissionResult from "./submissionResults.js";
 /**
- * Validates a problem by checking if the reference solution passes all visible test cases.
- * @param {Object} data - an object containing the reference solution and visible test cases.
+ * Validates a problem by checking if the reference solution passes all test cases.
+ * @param {Object} data - an object containing the reference solution and test cases.
  * @returns {Promise<Object>} - a promise that resolves to an object containing the validation result.
  * @throws {Error} - if there is an error in the validation process.
  */
 async function validateProblem(data) {
   try {
-    const { refrenceSol, visibleTestCases } = data;
+    const { refrenceSol, testCases } = data;
     for (let { language, snippet } of refrenceSol) {
       if (!language || !snippet) {
         return { success: false, message: "language or snippet is missing" };
       }
-      const submissions = visibleTestCases.map(({ testCase, output }) => {
+      const submissions = testCases.map(({ testCase, output }) => {
         console.log(`testcase : ${testCase} output : ${output}`)
         if (!testCase || !output) throw new Error("invalid input format");
         return {

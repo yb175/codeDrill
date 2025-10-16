@@ -11,12 +11,16 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@langchain/google-genai": "^0.2.18",
+    "@langchain/pinecone": "^0.2.0",
+    "@pinecone-database/pinecone": "^5.1.2",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "langchain": "^0.3.36",
     "mongoose": "^8.19.0",
     "nodemailer": "^7.0.7",
     "redis": "^5.8.3",

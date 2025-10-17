@@ -10,7 +10,7 @@ const app = express() ;
 app.use(express.json()) ; 
 app.use(cookieParser()) ; 
 app.use('/user',userRouter) ; 
-app.use('/problem',problemRouter) ; 
+app.use('/problems',problemRouter) ; 
 const promises = [main(),redisConnect()] ; 
 async function start() {
     try{

@@ -1,6 +1,6 @@
 import problemModel from "../../models/problem/problemSchema.js";
 import validateProblem from "../../utils/problem/problemValidation.js";
-
+import validateProblemUpdate from "../../utils/problem/validateProblemUpdate.js";
 /**
  * @function editProblem
  * @description
@@ -116,7 +116,7 @@ async function editProblem(req, res) {
         ...(hiddentestCases || []),
       ];
       refrenceSol = refrenceSol || problem.refrenceSol;
-      const result = await validateProblem({ refrenceSol, testCases });
+      const result = await validateProblemUpdate({ refrenceSol, testCases });
       if (result.success == false) {
         res.status(200).send(result);
       }

@@ -84,7 +84,7 @@ export default async function runcode(req, res) {
         message: "Language not supported",
       });
     }
-    const problem = await problemModel.findOne({ problemNumber });
+    const problem = req.problem;
     const visibleTestCases = problem.visibleTestCases;
     let submissions = [];
     for (let i = 0; i < visibleTestCases.length; i++) {

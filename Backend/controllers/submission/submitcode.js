@@ -92,7 +92,7 @@ async function submitCode(req, res) {
         message: "Language not supported",
       });
     }
-    const problem = await problemModel.findOne({ problemNumber });
+    const problem = JSON.parse(await redisClient.get(`problem:${problemNumber}`)); 
     if (!problem) {
       return res.status(404).json({
         success: false,

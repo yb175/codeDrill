@@ -134,7 +134,7 @@ async function submitCode(req, res) {
     let runtime = 0;
     let memory = 0;
     let testcasesPassed = 0;
-    let failedTest = null;
+    let failedTest = [];
     const submissionResult = (await batchSubmit(submissions)).data;
     for (let result of submissionResult) {
       runtime += parseFloat(result.time);

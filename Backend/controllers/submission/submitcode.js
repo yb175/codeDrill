@@ -3,7 +3,9 @@ import getLanguageCode from "../../utils/problem/langCode.js";
 import submissionModel from "../../models/submission/submission.js";
 import batchSubmit from "../../utils/submission/batchSubmit.js";
 import redisClient from "../../models/redis/client.js";
+import { Buffer } from "buffer"; 
 import jwt from "jsonwebtoken";
+import decode from "../../utils/submission/decodebase64.js";
 /**
  * @route POST /submit
  * @desc Submits a code for a problem and evaluates it against hidden test cases
@@ -126,29 +128,33 @@ async function submitCode(req, res) {
       const { testCase, output } = hiddentestCases[i];
       submissions.push({
         language_id: languageId,
-        source_code: code,
-        stdin: testCase,
-        expected_output: output,
+        source_code: Buffer.from(code).toString('base64'),
+        stdin: Buffer.from(testCase).toString('base64'),
+        expected_output: Buffer.from(output).toString('base64'),
       });
     }
     let runtime = 0;
     let memory = 0;
     let testcasesPassed = 0;
-    let failedTest = [];
-    const submissionResult = (await batchSubmit(submissions)).data;
-    for (let result of submissionResult) {
-      runtime += parseFloat(result.time);
-      memory = Math.max(memory, result.memory);
+    let failedTest = null;
+    const submissionResult = (await batchSubmit(submissions)); 
+    const data = submissionResult.data ;
+    
+    for (let result of data) {
+
+      runtime += Math.ceil(parseFloat(result.time) || 0);
+      memory = Math.max(memory, result.memory || 0);
       if (result.status_id == 3) {
         testcasesPassed++;
       } else {
         if (!failedTest) {
           failedTest = {
-            testCase: result.stdin,
-            expected_output: result.expected_output,
-            output: result.stdout,
-            err: result.stderr,
-            status_id : result.status_id 
+            testCase: decode(result.stdin),
+            expected_output: decode(result.expected_output),
+            output: decode(result.stdout),
+            err: decode(result.stderr),
+            status_id : result.status_id, 
+            compilation_output : decode(result.compile_output)
           };
         }
       }
@@ -162,7 +168,8 @@ async function submitCode(req, res) {
         runtime: runtime,
         memory: memory,
         testcasesPassed: testcasesPassed,
-        failedTest : failedTest 
+        failedTest : failedTest , 
+
       },
       { new: true }
     ).select("-user -__v -createdAt -updatedAt");

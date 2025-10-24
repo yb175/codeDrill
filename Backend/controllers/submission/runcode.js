@@ -1,6 +1,7 @@
 import problemModel from "../../models/problem/problemSchema.js";
 import getLanguageCode from "../../utils/problem/langCode.js";
 import batchSubmit from "../../utils/submission/batchSubmit.js";
+import decode from "../../utils/submission/decodebase64.js";
 /**
  * @function runcode
  * @description Executes user-submitted code against visible test cases of a specified problem.
@@ -91,20 +92,28 @@ export default async function runcode(req, res) {
       const { testCase, output } = visibleTestCases[i];
       submissions.push({
         language_id: languageId,
-        source_code: code,
-        stdin: testCase,
-        expected_output: output,
+        source_code: Buffer.from(code).toString('base64'),
+        stdin: Buffer.from(testCase).toString('base64'),
+        expected_output: Buffer.from(output).toString('base64'),
       });
     }
-    const submissionResult = (await batchSubmit(submissions)).data;
+    const submissionData = (await batchSubmit(submissions)); 
+    if(submissionData.success==false) {
+      return res.status(500).json({
+        success: false,
+        message: submissionData.message,
+      });
+    }
+    const submissionResult = submissionData.data; 
     let analysis = [];
     for (let result of submissionResult) {
       analysis.push({
-        testCase: result.stdin,
-        expected_output: result.expected_output,
-        output: result.stdout,
-        err: result.stderr,
-        status_id: result.status_id,
+        testCase: decode(result.stdin),
+        expected_output: decode(result.expected_output),
+        output: decode(result.stdout),
+        err: decode(result.stderr),
+        status_id: decode(result.status_id),
+        compilation_output : decode(result.compile_output)
       });
     }
     res.send({

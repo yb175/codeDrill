@@ -1,13 +1,13 @@
-import axios from "axios" 
+import axios from "axios";
 /**
  * Retrieves the submission results from the Judge0 API.
  * @param {Array} tokens - an array of submission tokens.
  * @returns {Promise<Object>} - a promise that resolves to an object containing the submission results.
  * @throws {Error} - if the submission processing times out or if there is an error in the API request.
  */
-async function getbatchSubmit(tokens){
-    try {
-    const tokenString = tokens.map(t => t.token || t).join(",");
+async function getbatchSubmit(tokens) {
+  try {
+    const tokenString = tokens.map((t) => t.token || t).join(",");
     if (!tokens) throw new Error("No token found");
 
     const options = {
@@ -16,6 +16,7 @@ async function getbatchSubmit(tokens){
       params: {
         tokens: tokenString,
         fields: "*",
+        base64_encoded: true,
       },
       headers: {
         "x-rapidapi-key": process.env.JUDGE0_API_KEY,
@@ -28,23 +29,33 @@ async function getbatchSubmit(tokens){
 
     while (attempts < maxAttempts) {
       const response = await axios.request(options);
-      const submissions = response.data.submissions;
-      const allFinished = submissions.every((item) => item && item.status.id > 2);
+      const submissions = response.data.submissions.map((sub) => {
+        return {
+          ...sub,
+          compilation_result: sub.compile_output || "",
+          stderr: sub.stderr || "",
+          stdout: sub.stdout || "",
+          expected_output: sub.expected_output || "",
+        };
+      });
+      const allFinished = submissions.every(
+        (item) => item && item.status.id > 2
+      );
 
       if (allFinished) {
         return { success: true, data: submissions };
       }
 
       attempts++;
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const delay = Math.min(500 * 2 ** attempts, 5000);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
 
     return { success: false, message: "Submission processing timed out." };
-
   } catch (err) {
     const message = err.response ? err.response.data.error : err.message;
     return { success: false, message: message };
   }
 }
 
-export default getbatchSubmit
+export default getbatchSubmit;

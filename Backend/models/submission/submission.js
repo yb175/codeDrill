@@ -48,7 +48,10 @@ const submissionSchema = new Schema({
     expected_output : String ,
     output : String , 
     err : String,
-    status_id : Number
+    status_id : Number,
+    compilation_output: {
+    type: String,
+    },
   },
   timeTaken: {
     type: Number,

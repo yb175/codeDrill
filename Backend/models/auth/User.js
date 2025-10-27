@@ -1,26 +1,26 @@
 /**
  * @fileoverview Defines the Mongoose schema and model for user data in the coding platform application.
- * 
+ *
  * * @module models/user
  * @description
  * This module defines the `User` schema and model used to store user-related information such as
  * personal details, role, and problems solved. Each user document tracks a list of problems the user has solved,
  * including metadata like language used, submission status, and timestamp.
- * 
+ *
  * * **Schema Fields:**
  * - **`name`**: User's name. (String, required, min 3, max 20)
  * - **`email`**: User's unique email address. (String, required, max 30, unique, indexed)
  * - **`role`**: User's access level. (Enum: `"admin"`, `"user"`, `"guest"`, default: `"guest"`)
  * - **`problemSolved`**: Array of subdocuments defined in `problemSolvedSchema`, storing details of solved problems.
  * - **`timestamps`**: Automatically adds `createdAt` and `updatedAt` fields to each document.
- * 
+ *
  * * **Dependencies:**
  * - `mongoose`: For schema and model creation.
  * - `problemSolvedSchema`: Imported sub-schema defining structure for solved problems.
- * 
+ *
  * * **Output Format:**
  * @returns {mongoose.Model} A compiled Mongoose model named `'user'`, representing the `User` collection in MongoDB.
- * 
+ *
  * * **Usage Example:**
  * ```js
  * import userModel from './models/user.js';
@@ -29,39 +29,70 @@
  * ```
  */
 import mongoose from "mongoose";
-const {Schema} = mongoose ; 
+const { Schema } = mongoose;
 import problemSolvedSchema from "./Schema/problem.js";
-const UserSchema = new Schema({
+const UserSchema = new Schema(
+  {
     name: {
-        type : String ,
-        required : true, 
-        minLength : 3, 
-        maxLength : 20,
-        trim: true,
-    }, 
+      type: String,
+      required: true,
+      minLength: 3,
+      maxLength: 20,
+      trim: true,
+    },
     email: {
-        type : String,
-        required : true , 
-        maxLength : 30 , 
-        trim : true, 
-        index : true , 
-        unique : true 
-    }, 
-    password : {
-        type : String , 
-        trim : true,
-        required : true
+      type: String,
+      required: true,
+      maxLength: 30,
+      trim: true,
+      index: true,
+      unique: true,
     },
-    role : {
-        type : String , 
-        enum : ["admin","user","guest"], 
-        default : "guest"
+    password: {
+      type: String,
+      trim: true,
+      required: true,
     },
-    isVerified : {
-        type : Boolean , 
-        default : false
+    role: {
+      type: String,
+      enum: ["admin", "user", "guest"],
+      default: "guest",
     },
-    problemSolved : [problemSolvedSchema]
-},{timestamps : true}) 
-const userModel = mongoose.model('user',UserSchema) ; 
-export default userModel ; 
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    problemSolved: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "problem",
+          required: true,
+        },
+      ],
+      default: [],
+    },
+  },
+  {
+    methods: {
+      async updateProblemSolved(problemId) {
+        if (!this.problemSolved) {
+          this.problemSolved = [];
+        }
+        const problemIdString = problemId.toString();
+        const alreadySolved = this.problemSolved.some(
+          (solvedId) => solvedId.toString() === problemIdString
+        );
+        if (!alreadySolved) {
+          this.problemSolved.push(problemId);
+          await this.save();
+          return true;
+        }
+        return false;
+      },
+    },
+    timestamps: true,
+  }
+);
+const userModel = mongoose.model("user", UserSchema);
+export default userModel;

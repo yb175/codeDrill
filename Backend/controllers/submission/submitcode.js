@@ -1,4 +1,3 @@
-import problemModel from "../../models/problem/problemSchema.js";
 import getLanguageCode from "../../utils/problem/langCode.js";
 import submissionModel from "../../models/submission/submission.js";
 import batchSubmit from "../../utils/submission/batchSubmit.js";
@@ -116,7 +115,7 @@ async function submitCode(req, res) {
      const cachekey = newSubmission.generateCacheKey() ; 
      const result = await redisClient.get(cachekey) ;
     if(result){
-      const cachedSubmission = JSON.parse(result) ; 
+      const cachedSubmission = JSON.parse(result) ;
       return res.status(200).json({
           success: true,
           message: "Code submitted successfully", 
@@ -173,7 +172,13 @@ async function submitCode(req, res) {
       },
       { new: true }
     ).select("-user -__v -createdAt -updatedAt");
-    redisClient.set(cachekey,JSON.stringify(submission),{ EX: 3600 }) ; 
+    redisClient.set(cachekey,JSON.stringify(submission),{ EX: 3600 }) ;
+
+    if(testcasesPassed===hiddentestCases.length){
+       if(req.result.updateProblemSolved(req.problem._id)){
+            req.result.problemSolved 
+        } ; 
+    }
     res.status(200).json({
       success: true,
       message: "Code submitted successfully",

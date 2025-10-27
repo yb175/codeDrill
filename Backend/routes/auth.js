@@ -7,6 +7,7 @@ import verificationConfirmationMail from "../controllers/auth/verifyConfirmation
 import logout from "../controllers/auth/logout.js";
 import checkBlackList from "../middlewares/userAuth.js";
 import changePassword from "../controllers/auth/changePassword.js";
+import getProblemSolved from "../controllers/auth/getinfo.js";
 
 const userRouter = express.Router() ; 
 
@@ -34,4 +35,5 @@ userRouter.patch('/reset-password',checkBlackList,changePassword) ;
 // logout 
 userRouter.get('/logout',checkBlackList,logout) ; 
 
+userRouter.get('/problem-solved',checkBlackList,getProblemSolved) ; 
 export default userRouter ; 

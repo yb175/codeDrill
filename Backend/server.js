@@ -6,8 +6,13 @@ import problemRouter from "./routes/problem.js";
 import redisConnect from "./config/redisConfig.js";
 import submissionRouter from "./routes/submission.js";
 import cookieParser from "cookie-parser";
+import cors from "cors"
 dotenv.config() ;
-const app = express() ; 
+const app = express() ;
+app.use(cors({
+  origin: "http://localhost:5173",  
+  credentials: true,                 
+}));
 app.use(express.json()) ; 
 app.use(cookieParser()) ; 
 app.use('/user',userRouter) ; 

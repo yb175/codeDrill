@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@keyframes ping-slow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
+}
+.animate-ping-slow {
+  animation: ping-slow 5s ease-in-out infinite;
+}
+body{
+  background-color: #111827;
+  overflow-x: hidden;
+
+}

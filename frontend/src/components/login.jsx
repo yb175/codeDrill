@@ -4,13 +4,18 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import ErrorToast from "../assets/errorToast";
 import axios from "axios";
-
+import { zodResolver} from "@hookform/resolvers/zod"
+import {z} from "zod" ; 
+import { useForm } from "react-hook-form"
+const loginSchema = z.object({
+  email : z.string().email(), 
+  password : z.string().min(8,"password should be min 8 character") 
+})
 const LoginForm = ({ onToggleToSignup }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const loginRequest = async (email, password) => {
+  const { register, handleSubmit ,formState : { errors}} = useForm({resolver : zodResolver(loginSchema)})
+  const loginRequest = async ({email, password}) => {
     try {
       const response = await axios.post(
         "http://localhost:3000/user/login-with-password",
@@ -37,6 +42,7 @@ const LoginForm = ({ onToggleToSignup }) => {
       setErrorMessage(err?.response?.data?.message || "Try again later")
     }
   };
+   const onSubmit = async (data) => await loginRequest(data) ; 
   return (
     <div className="min-h-screen w-full flex items-center justify-center ">
       {errorMessage && <ErrorToast message={errorMessage} setErrorMessage={setErrorMessage}></ErrorToast>}
@@ -53,30 +59,27 @@ const LoginForm = ({ onToggleToSignup }) => {
             Sign Up
           </button>
         </div>
-
+         <form onSubmit={handleSubmit(onSubmit)}>
         {/* Email Input */}
         <div className="mb-4">
-          <input
+          <input {...register("email")}
             type="email"
             id="email"
             placeholder="you@example.com"
             className="w-full px-4 py-3 rounded-lg bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-transparent focus:border-purple-500 transition-colors duration-200"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-
+        {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>}
         {/* Password Input */}
         <div className="mb-5 relative">
           {" "}
           {/* 1. Added 'relative' */}
           <input
+            {...register("password")}
             type={showPassword ? "text" : "password"}
             id="password"
             placeholder="User124@"
             className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-transparent focus:border-purple-500 transition-colors duration-200" // 2. Added 'pr-12'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
           />
           {/* 3. Added the toggle button */}
           <button
@@ -91,12 +94,12 @@ const LoginForm = ({ onToggleToSignup }) => {
             )}
           </button>
         </div>
-
+        {errors.password && <p className="text-red-400 text-sm mt-0.5">{errors.password.message}</p>}
         {/* Continue Button & Forgot Password */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
           <button
+          type="submit"
             className="w-full sm:w-auto flex-1 py-3 text-white bg-green-600 rounded-lg transition-all duration-300 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            onClick={() => loginRequest(email, password)}
           >
             Continue
           </button>
@@ -107,7 +110,7 @@ const LoginForm = ({ onToggleToSignup }) => {
             Forgot password?
           </a>
         </div>
-
+         </form>
         {/* Divider */}
         <div className="relative flex items-center justify-center my-6">
           <div className="absolute inset-0 flex items-center">

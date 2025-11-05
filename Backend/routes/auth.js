@@ -8,21 +8,22 @@ import logout from "../controllers/auth/logout.js";
 import checkBlackList from "../middlewares/userAuth.js";
 import changePassword from "../controllers/auth/changePassword.js";
 import getProblemSolved from "../controllers/auth/getinfo.js";
+import ratelimiter from "../middlewares/ratelimiter.js";
 
 const userRouter = express.Router() ; 
 
 // Register 
-userRouter.post('/register',register) ; 
+userRouter.post('/register',ratelimiter,register) ; 
 
 // verification while registering 
-userRouter.get('/verify/:token',verifyEmail) ; 
+userRouter.get('/verify/:token',ratelimiter,verifyEmail) ; 
 
 // login with password 
-userRouter.post('/login-with-password',loginWithPassword) ; 
+userRouter.post('/login-with-password',ratelimiter,loginWithPassword) ; 
 
 // login with email verification
-userRouter.post('/send-email-verification', sendConfirmationMail) ;
-userRouter.get('/login-verify/:token',verificationConfirmationMail) ; 
+userRouter.post('/send-email-verification', ratelimiter,sendConfirmationMail) ;
+userRouter.get('/login-verify/:token',ratelimiter,verificationConfirmationMail) ; 
 
 // login with google 
 
@@ -31,9 +32,9 @@ userRouter.get('/login-verify/:token',verificationConfirmationMail) ;
 // forgot password
 
 // reset password 
-userRouter.patch('/reset-password',checkBlackList,changePassword) ; 
+userRouter.patch('/reset-password',checkBlackList,ratelimiter,changePassword) ; 
 // logout 
-userRouter.get('/logout',checkBlackList,logout) ; 
+userRouter.get('/logout',checkBlackList,ratelimiter,logout) ; 
 
-userRouter.get('/problem-solved',checkBlackList,getProblemSolved) ; 
+userRouter.get('/problem-solved',checkBlackList,ratelimiter,getProblemSolved) ; 
 export default userRouter ; 

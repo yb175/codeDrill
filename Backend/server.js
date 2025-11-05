@@ -1,4 +1,5 @@
 import main from "./config/mongooseConfig.js";
+import ratelimiter from "./middlewares/ratelimiter.js";
 import express from "express" ; 
 import dotenv from "dotenv" ;
 import userRouter from "./routes/auth.js";

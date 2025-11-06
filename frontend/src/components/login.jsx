@@ -1,51 +1,54 @@
-import React from "react";
 import { Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import ErrorToast from "../assets/errorToast";
-import axios from "axios";
 import { zodResolver} from "@hookform/resolvers/zod"
 import {z} from "zod" ; 
 import { useForm } from "react-hook-form"
+import { loginWithPassword } from "../slice/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 const loginSchema = z.object({
   email : z.string().email(), 
   password : z.string().min(8,"password should be min 8 character") 
 })
+
 const LoginForm = ({ onToggleToSignup }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const { register, handleSubmit ,formState : { errors}} = useForm({resolver : zodResolver(loginSchema)})
-  const loginRequest = async ({email, password}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch();
+  
+  // Get auth state from Redux store
+  const { isVerified: isAuthenticated, loading } = useSelector(state => state.auth || {});
+
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(loginSchema)
+  });
+  const navigate = useNavigate(); 
+  // Handle redirect after successful login
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated]);
+
+  // Handle loading state from Redux
+  useEffect(() => {
+    setIsLoading(loading === 'pending');
+  }, [loading]);
+
+  const onSubmit = async (data) => {
     try {
-      const response = await axios.post(
-        "http://localhost:3000/user/login-with-password",
-        {
-          email: email,
-          password: password,
-        },
-        {
-          withCredentials: true,
-        }
-      );
-      if (response.status != 200) {
-        throw new Error(
-          response?.data?.response?.data?.message || "Try again later"
-        );
-      }
-      console.log("Login successful:", response.data);
-      setErrorMessage("");
-    } catch (err) {
-      console.log(
-        "Login error:",
-        err?.response?.data?.message || "Try again later"
-      );
-      setErrorMessage(err?.response?.data?.message || "Try again later")
+      await dispatch(loginWithPassword(data)).unwrap();
+    } catch (error) {
+      setErrorMessage(error?.message || "Login failed");
     }
   };
-   const onSubmit = async (data) => await loginRequest(data) ; 
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center ">
-      {errorMessage && <ErrorToast message={errorMessage} setErrorMessage={setErrorMessage}></ErrorToast>}
+      {errorMessage && <ErrorToast message={errorMessage} setErrorMessage={setErrorMessage} />}
       <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-3 md:p-8 shadow-2xl w-full max-w-sm md:max-w-md flex flex-col justify-center">
         {/* Tabs */}
         <div className="flex mb-6">
@@ -59,58 +62,68 @@ const LoginForm = ({ onToggleToSignup }) => {
             Sign Up
           </button>
         </div>
-         <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Email Input */}
-        <div className="mb-4">
-          <input {...register("email")}
-            type="email"
-            id="email"
-            placeholder="you@example.com"
-            className="w-full px-4 py-3 rounded-lg bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-transparent focus:border-purple-500 transition-colors duration-200"
-          />
-        </div>
-        {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>}
-        {/* Password Input */}
-        <div className="mb-5 relative">
-          {" "}
-          {/* 1. Added 'relative' */}
-          <input
-            {...register("password")}
-            type={showPassword ? "text" : "password"}
-            id="password"
-            placeholder="User124@"
-            className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-transparent focus:border-purple-500 transition-colors duration-200" // 2. Added 'pr-12'
-          />
-          {/* 3. Added the toggle button */}
-          <button
-            type="button" // Important: prevents form submission
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center justify-center h-full w-12 text-gray-400 hover:text-gray-200"
-          >
-            {showPassword ? (
-              <EyeOff className="w-5 h-5" />
-            ) : (
-              <Eye className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-        {errors.password && <p className="text-red-400 text-sm mt-0.5">{errors.password.message}</p>}
-        {/* Continue Button & Forgot Password */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
-          <button
-          type="submit"
-            className="w-full sm:w-auto flex-1 py-3 text-white bg-green-600 rounded-lg transition-all duration-300 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            Continue
-          </button>
-          <a
-            href="#"
-            className="text-purple-400 text-sm font-medium hover:underline text-center sm:text-right"
-          >
-            Forgot password?
-          </a>
-        </div>
-         </form>
+        
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Email Input */}
+          <div className="mb-4">
+            <input 
+              {...register("email")}
+              type="email"
+              id="email"
+              placeholder="you@example.com"
+              className="w-full px-4 py-3 rounded-lg bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-transparent focus:border-purple-500 transition-colors duration-200"
+            />
+          </div>
+          {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>}
+          
+          {/* Password Input */}
+          <div className="mb-5 relative">
+            <input
+              {...register("password")}
+              type={showPassword ? "text" : "password"}
+              id="password"
+              placeholder="User124@"
+              className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-700 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-transparent focus:border-purple-500 transition-colors duration-200"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 flex items-center justify-center h-full w-12 text-gray-400 hover:text-gray-200"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+          {errors.password && <p className="text-red-400 text-sm mt-0.5">{errors.password.message}</p>}
+          
+          {/* Continue Button & Forgot Password */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full sm:w-auto flex-1 py-3 text-white rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 ${
+                isLoading 
+                  ? "bg-green-700 cursor-not-allowed relative overflow-hidden" 
+                  : "bg-green-600 hover:bg-green-700 focus:ring-green-500"
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <div className="absolute inset-0 shimmer-animation"></div>
+                  <span className="relative z-10">Loading...</span>
+                </>
+              ) : (
+                "Continue"
+              )}
+            </button>
+            <a
+              href="#"
+              className="text-purple-400 text-sm font-medium hover:underline text-center sm:text-right"
+            >
+              Forgot password?
+            </a>
+          </div>
+        </form>
+        
         {/* Divider */}
         <div className="relative flex items-center justify-center my-6">
           <div className="absolute inset-0 flex items-center">
@@ -123,7 +136,11 @@ const LoginForm = ({ onToggleToSignup }) => {
 
         {/* Social Buttons */}
         <div className="space-y-3">
-          <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg text-gray-300 transition-colors duration-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600">
+          <button 
+            type="button"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg text-gray-300 transition-colors duration-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <svg
               className="w-5 h-5 mr-2"
               fill="currentColor"
@@ -148,12 +165,13 @@ const LoginForm = ({ onToggleToSignup }) => {
           </button>
 
           <button
+            type="button"
+            disabled={isLoading}
             className="w-full flex items-center justify-center px-4 py-3 
   border border-gray-600 rounded-lg text-gray-300 
   transition-all duration-200 hover:bg-gray-700 
-  focus:outline-none focus:ring-2 focus:ring-gray-600"
+  focus:outline-none focus:ring-2 focus:ring-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {/* Google G Logo */}
             <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48">
               <path
                 fill="#EA4335"
@@ -175,10 +193,14 @@ const LoginForm = ({ onToggleToSignup }) => {
             Continue with Google
           </button>
 
-          <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg text-gray-300 transition-colors duration-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600">
+          <button 
+            type="button"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg text-gray-300 transition-colors duration-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <span className="mr-2">
               <Mail size={20} />
-            </span>{" "}
+            </span>
             Email Verification
           </button>
         </div>
@@ -195,6 +217,28 @@ const LoginForm = ({ onToggleToSignup }) => {
           </a>
         </p>
       </div>
+
+      {/* Add shimmer animation styles */}
+      <style jsx>{`
+        .shimmer-animation {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+          animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -9,6 +9,7 @@ import checkBlackList from "../middlewares/userAuth.js";
 import changePassword from "../controllers/auth/changePassword.js";
 import getProblemSolved from "../controllers/auth/getinfo.js";
 import ratelimiter from "../middlewares/ratelimiter.js";
+import checkUser from "../controllers/auth/checkUser.js";
 
 const userRouter = express.Router() ; 
 
@@ -37,4 +38,5 @@ userRouter.patch('/reset-password',checkBlackList,ratelimiter,changePassword) ;
 userRouter.get('/logout',checkBlackList,ratelimiter,logout) ; 
 
 userRouter.get('/problem-solved',checkBlackList,ratelimiter,getProblemSolved) ; 
+userRouter.get('/check', checkBlackList, checkUser) ;
 export default userRouter ; 

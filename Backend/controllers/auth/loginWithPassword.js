@@ -56,7 +56,7 @@ async function loginWithPassword(req, res) {
     res.status(200).json({
       success: true,
       message: "Login successful",
-      data: { email: userInfo.email, role: userInfo.role }
+      data: {name : userInfo.name ,email: userInfo.email, role: userInfo.role , _id : userInfo._id}
     });
   } catch (err) {
     console.error("Login error:", err);

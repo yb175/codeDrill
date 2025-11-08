@@ -1,7 +1,7 @@
 import { LayoutDashboard, Sparkles, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
-import { useSelector,useDispatch} from "react-redux";
+import { useDispatch} from "react-redux";
 import { logout } from "../slice/authSlice";
 const ProfileMenu = ({ firstLetter }) => {
   const [open, setOpen] = useState(false);

@@ -3,6 +3,11 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signUp } from "../slice/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { motion } from "framer-motion";
+import { resetSignUpData } from "../slice/authSlice";
+import EmailSentOverlay from "./emailSentOverlay";
 
 const signupSchema = z.object({
   name: z
@@ -40,11 +45,27 @@ const SignupForm = ({ onToggleToLogin }) => {
     resolver: zodResolver(signupSchema),
   });
 
-  const onSubmit = (data) => console.log(data);
+  const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
+  const { loading, signUpData } = useSelector((state) => state.auth);
+  const onSubmit = async (data) => {
+    try {
+      const resultAction = dispatch(signUp(data));
+    } catch (err) {
+      console.log("Something went wrong", err);
+    }
+  };
 
   return (
-    <div className="bg-gray-800 bg-opacity-70 backdrop-filter backdrop-blur-lg rounded-2xl p-8 shadow-2xl w-full max-w-md border border-gray-700">
+    <div className="bg-gray-800 bg-opacity-70 backdrop-filter backdrop-blur-lg rounded-2xl p-8 shadow-2xl w-full max-w-md border border-gray-700 relative">
+      {/* Email Sent Overlay */}
+      {signUpData && (
+        <EmailSentOverlay
+          onClose={() => {
+            dispatch(resetSignUpData());
+          }}
+        />
+      )}
       {/* Tabs */}
       <div className="flex mb-6">
         <button
@@ -60,7 +81,6 @@ const SignupForm = ({ onToggleToLogin }) => {
 
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Name */}
         <div className="mb-4">
           <input
             type="text"
@@ -71,13 +91,10 @@ const SignupForm = ({ onToggleToLogin }) => {
             } border border-transparent transition-colors duration-200`}
           />
           {errors.name && (
-            <p className="text-red-400 text-sm mt-1">
-              {errors.name.message}
-            </p>
+            <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>
           )}
         </div>
 
-        {/* Email */}
         <div className="mb-4">
           <input
             {...register("email")}
@@ -88,13 +105,10 @@ const SignupForm = ({ onToggleToLogin }) => {
             } border border-transparent transition-colors duration-200`}
           />
           {errors.email && (
-            <p className="text-red-400 text-sm mt-1">
-              {errors.email.message}
-            </p>
+            <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Password */}
         <div className="mb-6 relative">
           <input
             {...register("password")}
@@ -122,18 +136,21 @@ const SignupForm = ({ onToggleToLogin }) => {
           )}
         </div>
 
-        {/* Submit */}
         <div className="mb-6">
           <button
-            className="w-full py-3 text-white bg-green-600 rounded-lg transition-all duration-300 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             type="submit"
+            disabled={loading}
+            className={`w-full py-3 text-white rounded-lg transition-all duration-300 ${
+              loading
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-500"
+            }`}
           >
-            Create Account
+            {loading ? "Signing Up..." : "Create Account"}
           </button>
         </div>
       </form>
 
-      {/* Footer */}
       <p className="mt-8 text-center text-gray-400 text-sm">
         Already have an account?{" "}
         <a

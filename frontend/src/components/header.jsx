@@ -16,9 +16,9 @@ const Header = () => {
         </div>
 
         <nav className="flex space-x-6 text-sm font-medium">
-          {["Home", "Problems", "AI Features", "Discussion"].map((item) => (
+          {["Home", "Problems", "AI Features", "Discussion",user?.role === "admin" && "Admin"].map((item) => (
             <Link
-              to="/"
+              to={`/${item}`}
               key={item}
               className="text-gray-300 hover:text-purple-400 transition duration-300 relative group"
             >

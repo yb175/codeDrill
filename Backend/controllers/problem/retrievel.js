@@ -44,8 +44,9 @@ export async function getAllProblem(req, res) {
     res.status(200).json({
         success : true , 
         pageNumber : page ,
+        count : total ,
         totalPages : Math.ceil(total/limit) ,
-        data : problems 
+        data : problems ,
     })
   } catch (err) {
     res.status(500).json({

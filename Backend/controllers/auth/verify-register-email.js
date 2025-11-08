@@ -41,9 +41,7 @@ async function verifyEmail(req, res) {
     const { email } = decoded;
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ success: false, message: "User already exists/verified" });
+      return res.status(400).redirect(`${process.env.FRONTEND_URL}/verify-email-failed`)
     }
     await userModel.create(decoded);
     const userInfo = await userModel.findOne({ email });
@@ -60,14 +58,9 @@ async function verifyEmail(req, res) {
       sameSite: "lax",
       maxAge: 4 * 24 * 60 * 60 * 1000, 
     });
-    res.status(200).json({
-      success: true,
-      message: "User created successfully",
-      data: { email: userInfo.email, role: userInfo.role },
-    });
+    return res.status(200).redirect(`${process.env.FRONTEND_URL}/verify-email-success`)
   } catch (err) {
-    console.error("Verify email error:", err);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+     return res.status(500).redirect(`${process.env.FRONTEND_URL}/verify-email-failed`)
   }
 }
 

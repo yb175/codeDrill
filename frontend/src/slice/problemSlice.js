@@ -17,6 +17,19 @@ const getProblems = createAsyncThunk(
   }
 );
 
+const addProblem = createAsyncThunk(
+  "problems/addproblem",
+  async (problem, { rejectWithValue }) => {
+    try {
+      const response = await axiosClient.post(`/problems`, problem);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { success: false, message: "server error" }
+      );
+    }
+  }
+)
 const problemSlice = createSlice({
   name: "problem",
   initialState: {
@@ -24,8 +37,11 @@ const problemSlice = createSlice({
     loading: false,
     data: null,
     error: null,
+    addProblemData : {} 
   },
-  reducers: {},
+  reducers: {
+
+  },
   extraReducers: (builder) => {
     builder.addCase(getProblems.pending, (state) => {
       state.loading = true;
@@ -44,6 +60,7 @@ const problemSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     });
+
   },
 });
 

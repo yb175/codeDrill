@@ -1,6 +1,6 @@
 import React from "react";
-import { FilePlus, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
-
+import { FilePlus, Pencil, Search, ChevronLeft, ChevronRight, Pointer } from "lucide-react";
+import { Link } from "react-router";
 const ProblemManagement = ({
   problemCount,
   problems,
@@ -24,10 +24,13 @@ const ProblemManagement = ({
           Problems <span className="text-neutral-400 text-lg">({problemCount})</span>
         </h2>
 
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600/90 text-white rounded-lg font-medium hover:bg-blue-700 shadow-md hover:shadow-blue-900/30 transition-all">
-          <FilePlus className="w-5 h-5" />
+        <Link 
+        to="/AddProblem"
+        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600/90 text-white rounded-lg font-medium hover:bg-blue-700 shadow-md hover:shadow-blue-900/30 transition-all">
+          <FilePlus className="w-5 h-5" cursor={Pointer}
+           />
           Add Problem
-        </button>
+        </Link>
       </div>
 
       {/* Search Bar */}

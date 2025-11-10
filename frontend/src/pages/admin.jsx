@@ -1,10 +1,6 @@
-import React, { useEffect } from "react";
-import { LayoutDashboard } from "lucide-react";
 import Stats from "../sections/Admin/stats";
 import ProblemsSection from "../sections/Admin/problems";
 import { useDispatch } from "react-redux";
-import { getProblems } from "../slice/problemSlice";
-import { useSelector } from "react-redux";
 export default function Admin() {
   const dispatch = useDispatch();
 

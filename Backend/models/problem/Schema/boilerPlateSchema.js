@@ -40,7 +40,7 @@ const boilerPlateSchema = new Schema({
     type: String,
     required: true,
     trim: true,
-    maxlength: 500, 
+    maxlength: 5000, 
   },
 });
 

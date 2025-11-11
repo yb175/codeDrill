@@ -1,6 +1,5 @@
 import validateProblem from "../../utils/problem/problemValidation.js";
 import problemModel from "../../models/problem/problemSchema.js";
-import storeProblemSemantic from "../../utils/problem/storeProblemSementicly.js";
 /**
  * =========================================================
  * 🧠 FUNCTION DOCUMENTATION: createProblem
@@ -75,14 +74,12 @@ import storeProblemSemantic from "../../utils/problem/storeProblemSementicly.js"
  * 2. Merges visible and hidden test cases for validation.
  * 3. Calls `validateProblem()` → validates reference solution correctness and duplicate existence.
  * 4. Retrieves total number of problems to assign new `problemNumber`.
- * 5. Calls `storeProblemSemantic()` → embeds and stores semantic vector in Pinecone.
- * 6. Creates a new entry in MongoDB via `problemModel.create()`.
- * 7. Returns success message if all steps complete without error.
+ * 5. Creates a new entry in MongoDB via `problemModel.create()`.
+ * 6. Returns success message if all steps complete without error.
  * 
  * ---------------------------------------------------------
  * ⚙️ Dependencies Used:
  * - **validateProblem.js** → Validates problem correctness and duplication.
- * - **storeProblemSementicly.js** → Embeds and stores semantic vectors in Pinecone.
  * - **problemSchema.js** → MongoDB schema for problem storage.
  * =========================================================
  */
@@ -95,7 +92,6 @@ async function createProblem(req,res){
      const count = await problemModel.countDocuments() ; 
      const problemCreater = req.result._id ;
      const problemNumber = count+1 ; 
-     await storeProblemSemantic({title,description,problemNumber}) 
      await problemModel.create({title,problemNumber,description,problemTags,companyTags,hints,acceptanceRate,visibleTestCases,hiddentestCases,boilerplate,problemCreater,difficulty,refrenceSol}) ; 
      return res.status(200).json({success : true , message : 'problem created successfully'}) ;
      }catch(err){

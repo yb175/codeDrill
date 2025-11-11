@@ -1,38 +1,56 @@
 // src/components/ProblemDetails.jsx
-import { useState } from "react";
 import { X } from "lucide-react";
 import AccordionItem from "../../assets/AccordationItem";
+import { useDispatch, useSelector } from "react-redux";
+import { updateProblemData, addToArray, removeFromArray } from "../../slice/problemSlice";
 
 export default function ProblemDetails() {
-  const [title, setTitle] = useState("");
-  const [difficulty, setDifficulty] = useState("Easy");
+  const dispatch = useDispatch();
 
-  const [tags, setTags] = useState(["Array", "Hash Table"]);
-  const [companies, setCompanies] = useState(["Google", "Meta"]);
+  // Redux state access
+  const { title, difficulty, problemTags = [], companyTags = [] } =
+    useSelector((state) => state.problem.addProblemData);
 
-  const [tagInput, setTagInput] = useState("");
-  const [companyInput, setCompanyInput] = useState("");
+  // NEW: Universal field update
+  const updateField = (key, value) => {
+    dispatch(updateProblemData({ key, value }));
+  };
 
-  const addTag = (e) => {
-    if (e.key === "Enter" && tagInput.trim() !== "") {
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()]);
+  // NEW: Universal tag handlers
+  const handleAddTag = (e) => {
+    if (e.key === "Enter" && e.target.value.trim() !== "") {
+      const newTag = e.target.value.trim();
+      if (!problemTags.includes(newTag)) {
+        dispatch(addToArray({ arrayKey: "problemTags", item: newTag }));
       }
-      setTagInput("");
+      e.target.value = "";
     }
   };
 
-  const addCompanyTag = (e) => {
-    if (e.key === "Enter" && companyInput.trim() !== "") {
-      if (!companies.includes(companyInput.trim())) {
-        setCompanies([...companies, companyInput.trim()]);
+  const handleAddCompany = (e) => {
+    if (e.key === "Enter" && e.target.value.trim() !== "") {
+      const newCompany = e.target.value.trim();
+      if (!companyTags.includes(newCompany)) {
+        dispatch(addToArray({ arrayKey: "companyTags", item: newCompany }));
       }
-      setCompanyInput("");
+      e.target.value = "";
     }
   };
 
-  const removeTag = (t) => setTags(tags.filter((i) => i !== t));
-  const removeCompany = (c) => setCompanies(companies.filter((i) => i !== c));
+  // NEW: Universal tag removal
+  const removeTag = (tag) => {
+    const index = problemTags.indexOf(tag);
+    if (index !== -1) {
+      dispatch(removeFromArray({ arrayKey: "problemTags", index }));
+    }
+  };
+
+  const removeCompany = (company) => {
+    const index = companyTags.indexOf(company);
+    if (index !== -1) {
+      dispatch(removeFromArray({ arrayKey: "companyTags", index }));
+    }
+  };
 
   return (
     <AccordionItem title="Problem Details" defaultOpen={true}>
@@ -45,10 +63,10 @@ export default function ProblemDetails() {
           <input
             type="text"
             placeholder="e.g., Two Sum"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={title || ""}
+            onChange={(e) => updateField("title", e.target.value)}
             className="w-full px-4 py-2.5 rounded-lg bg-base-100/30 border border-neutral-700/50 
-                     focus:border-primary/50 outline-none transition placeholder:text-neutral-500"
+                       focus:border-primary/50 outline-none transition placeholder:text-neutral-500"
           />
         </div>
 
@@ -58,14 +76,14 @@ export default function ProblemDetails() {
             Difficulty
           </label>
           <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
+            value={difficulty || "easy"}
+            onChange={(e) => updateField("difficulty", e.target.value)}
             className="w-full px-4 py-2.5 rounded-lg bg-base-100/30 border border-neutral-700/50 
-                     focus:border-primary/50 outline-none transition"
+                       focus:border-primary/50 outline-none transition"
           >
-            <option>Easy</option>
-            <option>Medium</option>
-            <option>Hard</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
           </select>
         </div>
 
@@ -74,16 +92,15 @@ export default function ProblemDetails() {
           <label className="text-sm font-medium text-neutral-300">
             Problem Tags
           </label>
-
           <div
             className="w-full min-h-[48px] rounded-lg bg-base-100/20 border border-neutral-700/40 
                         px-3 py-2 flex flex-wrap gap-2 items-center"
           >
-            {tags.map((tag, idx) => (
+            {problemTags.map((tag, idx) => (
               <span
                 key={idx}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-md text-sm
-                         bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition"
+                           bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition"
               >
                 {tag}
                 <X
@@ -98,9 +115,7 @@ export default function ProblemDetails() {
               type="text"
               placeholder="Add tag…"
               className="flex-grow min-w-[100px] bg-transparent focus:outline-none text-sm"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={addTag}
+              onKeyDown={handleAddTag}
             />
           </div>
         </div>
@@ -110,16 +125,15 @@ export default function ProblemDetails() {
           <label className="text-sm font-medium text-neutral-300">
             Company Tags
           </label>
-
           <div
             className="w-full min-h-[48px] rounded-lg bg-base-100/20 border border-neutral-700/40 
                         px-3 py-2 flex flex-wrap gap-2 items-center"
           >
-            {companies.map((c, idx) => (
+            {companyTags.map((c, idx) => (
               <span
                 key={idx}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-md text-sm
-                         bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600/25 transition"
+                           bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600/25 transition"
               >
                 {c}
                 <X
@@ -134,9 +148,7 @@ export default function ProblemDetails() {
               type="text"
               placeholder="Add company…"
               className="flex-grow min-w-[100px] bg-transparent focus:outline-none text-sm"
-              value={companyInput}
-              onChange={(e) => setCompanyInput(e.target.value)}
-              onKeyDown={addCompanyTag}
+              onKeyDown={handleAddCompany}
             />
           </div>
         </div>

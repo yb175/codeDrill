@@ -56,7 +56,7 @@ const problemSchema = new Schema({
     type: String,
     required: true,
     maxLength: 500,
-    minLength: 10,
+    minLength: 3,
   },
   problemNumber: {
     type: Number,
@@ -79,21 +79,22 @@ const problemSchema = new Schema({
   },
   hiddentestCases: [
     {
-    testCase: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: 1,
-      maxlength: 200,
+      testCase: {
+        type: String,
+        required: true,
+        trim: true,
+        minlength: 1,
+        maxlength: 200,
+      },
+      output: {
+        type: String,
+        required: true,
+        trim: true,
+        minlength: 1,
+        maxlength: 4000,
+      },
     },
-    output: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: 1,
-      maxlength: 200,
-    }
-}],
+  ],
   boilerplate: {
     type: [boilerPlateSchema],
     required: true,
@@ -111,6 +112,7 @@ const problemSchema = new Schema({
     type: String,
     enum: ["easy", "medium", "hard"],
     required: true,
+    set: (v) => v.toLowerCase(),
   },
 });
 

@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import AccordionItem from "../../assets/AccordationItem";
 import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 import { python } from "@codemirror/lang-python";
 import { javascript } from "@codemirror/lang-javascript";
+import { cpp } from "@codemirror/lang-cpp";
 import { Upload, Code2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { updateProblemData, addToArray, updateArrayItem } from "../../slice/problemSlice";
-import { cpp } from "@codemirror/lang-cpp";
+import { addToArray, updateArrayItem } from "../../slice/problemSlice";
 
 export default function BoilerplateSection() {
   const dispatch = useDispatch();
@@ -18,8 +18,10 @@ export default function BoilerplateSection() {
   const languages = [
     { label: "JavaScript", key: "javascript", ext: javascript },
     { label: "Python", key: "python", ext: python },
-    { label: "C++", key: "c++", ext: cpp }, // Now using cpp extension
+    { label: "C++", key: "c++", ext: cpp },
   ];
+
+  const [localSnippets, setLocalSnippets] = useState({});
 
   const getDefaultBoilerplate = (lang) => {
     const existing = boilerplateArray.find((b) => b.language === lang);
@@ -27,60 +29,79 @@ export default function BoilerplateSection() {
 
     switch (lang) {
       case "python":
-        return `class Solution:\n    def solve(self):\n        # write your Python solution here\n        pass`;
+        return `class Solution:\n    def solve(self):\n        pass`;
       case "javascript":
-        return `function solve() {\n  // write your JavaScript solution here\n}`;
+        return `function solve() {\n  \n}`;
       case "c++":
-        return `#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    // write your C++ solution here\n}\n\nint main() {\n    solve();\n    return 0;\n}`;
+        return `#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n  \n}\n\nint main(){ return 0; }`;
       default:
         return "";
     }
   };
 
-  // NEW: Universal boilerplate handler
-  const handleChange = (lang, value) => {
-    const existingIndex = boilerplateArray.findIndex((b) => b.language === lang);
+  // Hydrate local state when editing OR on first load
+  useEffect(() => {
+    const init = {};
+    languages.forEach((lang) => {
+      init[lang.key] = getDefaultBoilerplate(lang.key);
+    });
+    setLocalSnippets(init);
+  }, [boilerplateArray]);
 
-    if (existingIndex !== -1) {
-      // Update existing boilerplate
-      dispatch(updateArrayItem({
-        arrayKey: "boilerplate",
-        index: existingIndex,
-        updates: { snippet: value }
-      }));
+  const handleChange = (lang, value) => {
+    setLocalSnippets((prev) => ({ ...prev, [lang]: value }));
+
+    const index = boilerplateArray.findIndex((b) => b.language === lang);
+
+    if (index !== -1) {
+      dispatch(
+        updateArrayItem({
+          arrayKey: "boilerplate",
+          index,
+          updates: { snippet: value },
+        })
+      );
     } else {
-      // Add new boilerplate
-      dispatch(addToArray({
-        arrayKey: "boilerplate",
-        item: { language: lang, snippet: value }
-      }));
+      dispatch(
+        addToArray({
+          arrayKey: "boilerplate",
+          item: { language: lang, snippet: value },
+        })
+      );
     }
   };
 
-  // NEW: File upload handler using universal actions
   const handleFileUpload = (lang, e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const content = event.target.result;
-        const existingIndex = boilerplateArray.findIndex((b) => b.language === lang);
+    if (!file) return;
 
-        if (existingIndex !== -1) {
-          dispatch(updateArrayItem({
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target.result;
+
+      setLocalSnippets((prev) => ({ ...prev, [lang]: content }));
+
+      const index = boilerplateArray.findIndex((b) => b.language === lang);
+
+      if (index !== -1) {
+        dispatch(
+          updateArrayItem({
             arrayKey: "boilerplate",
-            index: existingIndex,
-            updates: { snippet: content }
-          }));
-        } else {
-          dispatch(addToArray({
+            index,
+            updates: { snippet: content },
+          })
+        );
+      } else {
+        dispatch(
+          addToArray({
             arrayKey: "boilerplate",
-            item: { language: lang, snippet: content }
-          }));
-        }
-      };
-      reader.readAsText(file);
-    }
+            item: { language: lang, snippet: content },
+          })
+        );
+      }
+    };
+
+    reader.readAsText(file);
   };
 
   return (
@@ -111,13 +132,12 @@ export default function BoilerplateSection() {
               </div>
             }
           >
-            {/* Now using CodeMirror for ALL languages including C++ */}
             <div className="rounded-xl overflow-hidden border border-neutral-700/50 shadow-md hover:border-blue-500/40 transition-all">
               <CodeMirror
-                value={getDefaultBoilerplate(lang.key)}
+                value={localSnippets[lang.key] || ""}
                 height="250px"
                 theme={dracula}
-                extensions={lang.key === "c++" ? [cpp()] : [lang.ext()]}
+                extensions={[lang.ext()]}
                 onChange={(value) => handleChange(lang.key, value)}
                 className="text-sm font-mono"
                 basicSetup={{

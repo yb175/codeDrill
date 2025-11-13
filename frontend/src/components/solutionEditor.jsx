@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 import { python } from "@codemirror/lang-python";
@@ -21,41 +21,56 @@ export default function SolutionEditor() {
     { label: "C++", key: "c++", ext: cpp },
   ];
 
-  const [openLang, setOpenLang] = React.useState("python");
+  const [openLang, setOpenLang] = useState("python");
+
+  // Local state for editor values
+  const [localSnippets, setLocalSnippets] = useState({});
 
   const getDefaultSnippet = (lang) => {
-    const existing = refrenceSol.find((r) => r.language === lang);
+    const existing = refrenceSol.find((s) => s.language === lang);
     if (existing) return existing.snippet;
 
     switch (lang) {
       case "python":
-        return `class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        # Write your solution here`;
+        return `class Solution:\n    def solve(self):\n        pass`;
       case "javascript":
-        return `function twoSum(nums, target) {\n  // Write your solution here\n}`;
+        return `function solve() {\n  \n}`;
       case "c++":
-        return `#include <bits/stdc++.h>\nusing namespace std;\n\nvector<int> twoSum(vector<int>& nums, int target) {\n    // Write your solution here\n}\n\nint main(){\n    return 0;\n}`;
+        return `#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n  \n}\n\nint main(){ return 0; }`;
       default:
         return "";
     }
   };
 
-  // NEW: Universal solution handler
-  const handleChange = (lang, value) => {
-    const existingIndex = refrenceSol.findIndex((r) => r.language === lang);
+  // Hydrate local state from Redux on edit page load
+  useEffect(() => {
+    const initialState = {};
+    languages.forEach((lang) => {
+      initialState[lang.key] = getDefaultSnippet(lang.key);
+    });
+    setLocalSnippets(initialState);
+  }, []);
 
-    if (existingIndex !== -1) {
-      // Update existing solution
-      dispatch(updateArrayItem({
-        arrayKey: "refrenceSol",
-        index: existingIndex,
-        updates: { snippet: value }
-      }));
+  const handleChange = (lang, value) => {
+    setLocalSnippets((prev) => ({ ...prev, [lang]: value }));
+
+    const index = refrenceSol.findIndex((s) => s.language === lang);
+
+    if (index !== -1) {
+      dispatch(
+        updateArrayItem({
+          arrayKey: "refrenceSol",
+          index,
+          updates: { snippet: value },
+        })
+      );
     } else {
-      // Add new solution
-      dispatch(addToArray({
-        arrayKey: "refrenceSol",
-        item: { language: lang, snippet: value }
-      }));
+      dispatch(
+        addToArray({
+          arrayKey: "refrenceSol",
+          item: { language: lang, snippet: value },
+        })
+      );
     }
   };
 
@@ -64,6 +79,7 @@ export default function SolutionEditor() {
       <div className="space-y-3">
         {languages.map((lang) => {
           const isOpen = openLang === lang.key;
+
           return (
             <div
               key={lang.key}
@@ -71,11 +87,8 @@ export default function SolutionEditor() {
                 isOpen ? "shadow-md" : "opacity-80 hover:opacity-100"
               }`}
             >
-              {/* Header Row */}
               <button
-                onClick={() =>
-                  setOpenLang(isOpen ? null : lang.key)
-                }
+                onClick={() => setOpenLang(isOpen ? null : lang.key)}
                 className="flex w-full items-center justify-between px-4 py-3 text-neutral-200 font-medium text-sm"
               >
                 <div className="flex items-center gap-2">
@@ -89,7 +102,6 @@ export default function SolutionEditor() {
                 )}
               </button>
 
-              {/* Editor (collapsible body) */}
               <div
                 className={`transition-all duration-300 overflow-hidden ${
                   isOpen ? "max-h-[400px]" : "max-h-0"
@@ -99,7 +111,7 @@ export default function SolutionEditor() {
                   <div className="p-3 pt-0 border-t border-neutral-700/40">
                     <div className="rounded-lg overflow-hidden border border-neutral-700/50">
                       <CodeMirror
-                        value={getDefaultSnippet(lang.key)}
+                        value={localSnippets[lang.key] || ""}
                         height="250px"
                         theme={dracula}
                         extensions={[lang.ext()]}

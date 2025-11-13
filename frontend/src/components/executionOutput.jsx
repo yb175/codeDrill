@@ -4,17 +4,18 @@ import { motion } from "framer-motion";
 import { Terminal } from "lucide-react";
 import { useSelector } from "react-redux";
 
-export default function ExecutionOutput() {
+export default function ExecutionOutput({ isEditMode = false }) {
   const { loading, error } = useSelector((state) => state.problem);
 
-  // Agar backend se koi specific success message aya ho
+  const successMessage = isEditMode
+    ? "Problem updated successfully!"
+    : "Problem created successfully!";
+
   const output = error
     ? { success: false, message: error.message || "Server error occurred" }
     : loading
     ? null
-    : { success: true, message: "✅ Problem created successfully!" };
-
-  const isSuccess = output?.success;
+    : { success: true, message: successMessage };
 
   return (
     <motion.div
@@ -33,14 +34,12 @@ export default function ExecutionOutput() {
       {/* Output Box */}
       <div className="p-4 min-h-[110px] font-mono text-sm rounded-xl border border-neutral-700 bg-neutral-900/60 shadow-inner">
         {loading ? (
-          // 🌀 Shimmer while loading
           <div className="space-y-3 animate-pulse">
             <div className="h-4 w-1/3 bg-neutral-700 rounded"></div>
             <div className="h-4 w-2/3 bg-neutral-700 rounded"></div>
             <div className="h-4 w-1/2 bg-neutral-700 rounded"></div>
           </div>
         ) : error ? (
-          // ❌ Show error
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -49,13 +48,12 @@ export default function ExecutionOutput() {
             ❌ {error.message || "Some test cases failed or server error"}
           </motion.p>
         ) : (
-          // ✅ Show success
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-green-400 drop-shadow-md"
           >
-            ✅ Problem created successfully!
+            ✅ {output.message}
           </motion.p>
         )}
       </div>

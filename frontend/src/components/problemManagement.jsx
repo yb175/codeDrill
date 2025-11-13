@@ -25,7 +25,7 @@ const ProblemManagement = ({
         </h2>
 
         <Link 
-        to="/AddProblem"
+        to="Add"
         className="flex items-center gap-2 px-5 py-2.5 bg-blue-600/90 text-white rounded-lg font-medium hover:bg-blue-700 shadow-md hover:shadow-blue-900/30 transition-all">
           <FilePlus className="w-5 h-5" cursor={Pointer}
            />

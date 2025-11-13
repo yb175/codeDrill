@@ -59,12 +59,14 @@ export async function getAllProblem(req, res) {
 export async function getProblembyId(req,res){
   try{
     const id = req.params.id ; 
-    const problem = await problemModel.findOne({problemNumber : id}).select('title problemNumber description problemTags companyTags hints acceptanceRate visibleTestCases boilerplate difficulty') ;  
+    const problem = await problemModel.findOne({problemNumber : id}).select('title problemNumber description problemTags companyTags hints acceptanceRate visibleTestCases boilerplate difficulty refrenceSol');
+    
     if(!problem){
       res.status(404).json({
         success : false , 
         message: `problem not found` 
       })
+
     }
     res.status(200).json({
       success : true , 

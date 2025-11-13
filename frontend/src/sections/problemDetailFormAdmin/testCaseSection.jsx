@@ -45,13 +45,53 @@ export default function TestCasesSection() {
     }));
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // You can handle file upload for hidden test cases here
-      console.log("File uploaded:", file);
+ const handleFileUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = (ev) => {
+    const text = ev.target.result;
+
+    const lines = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    const parsed = [];
+
+    for (let line of lines) {
+      // Input and output MUST be separated by a comma
+      const parts = line.split(",");
+
+      if (parts.length < 2) {
+        console.warn("Skipping invalid line (no comma found):", line);
+        continue;
+      }
+
+      const input = parts[0].trim();
+      const output = parts.slice(1).join(",").trim(); // support multiple commas safely
+
+      parsed.push({
+        testCase: input,
+        output: output,
+        description: "Imported from file",
+        imgUrl: "",
+        open: false,
+      });
     }
+
+    console.log("Parsed test cases:", parsed);
+
+    parsed.forEach((tc) =>
+      dispatch(addToArray({ arrayKey: "hiddentestCases", item: tc }))
+    );
   };
+
+  reader.readAsText(file);
+};
+
 
   const toggleAccordion = (index) => {
     dispatch(updateArrayItem({ 

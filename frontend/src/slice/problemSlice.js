@@ -1,36 +1,88 @@
+/**
+ * Problem Slice Structure (JSON Schema)
+ * 
+ * {
+ *   number: Number | null,
+ *   loading: Boolean,
+ *   data: Array | null,        // list of problems for table view
+ *   error: Object | null,
+ *   addProblemData: {          // reusable form state (Add + Edit)
+ *     title: String,
+ *     description: {
+ *       text: String,
+ *       imgUrl: String
+ *     },
+ *     problemTags: Array<String>,
+ *     companyTags: Array<String>,
+ *     hints: Array<Object>,
+ *     acceptanceRate: Number,
+ *     visibleTestCases: Array<Object>,
+ *     hiddentestCases: Array<Object>,
+ *     boilerplate: Array<Object>,
+ *     refrenceSol: Array<Object>,
+ *     problemCreater: String,
+ *     difficulty: "easy" | "medium" | "hard"
+ *   }
+ * }
+ */
+
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "../../config/axiosClient";
 
+
 const getProblems = createAsyncThunk(
-  "problems/getproblems",
+  "problems/get",
   async ({ page, limit }, { rejectWithValue }) => {
     try {
-      const response = await axiosClient.get(
-        `/problems?page=${page}&limit=${limit}`
-      );
+      const response = await axiosClient.get(`/problems?page=${page}&limit=${limit}`);
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false, message: "server error" });
     }
   }
 );
 
 const addProblem = createAsyncThunk(
-  "problems/addproblem",
+  "problems/add",
   async (problem, { rejectWithValue }) => {
-    console.log(problem);
     try {
       const response = await axiosClient.post(`/problems`, problem);
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false, message: "server error" });
     }
   }
 );
+
+const fetchProblem = createAsyncThunk(
+  "problems/fetch",
+  async (id , { rejectWithValue})=>{
+    try{
+      const response = await axiosClient.get(`/problems/${id}`);
+      return response.data;
+    }catch(err){
+      return rejectWithValue(err.response?.data || {success:false, message:"server error"})
+    }
+  }
+)
+const emptyForm = {
+  title: "",
+  description: {
+    text: "",
+    imgUrl: ""
+  },
+  problemTags: [],
+  companyTags: [],
+  hints: [],
+  acceptanceRate: 0,
+  visibleTestCases: [],
+  hiddentestCases: [],
+  boilerplate: [],
+  refrenceSol: [],
+  problemCreater: "",
+  difficulty: "easy"
+};
+
 
 const problemSlice = createSlice({
   name: "problem",
@@ -39,93 +91,58 @@ const problemSlice = createSlice({
     loading: false,
     data: null,
     error: null,
-    addProblemData: {
-      title: "",
-      description: {
-        text: "",
-        imgUrl: ""
-      },
-      problemTags: [],
-      companyTags: [],
-      hints: [],
-      acceptanceRate: 0,
-      visibleTestCases: [],
-      hiddentestCases: [],
-      boilerplate: [],
-      refrenceSol: [],
-      problemCreater: "",
-      difficulty: "easy"
-    }
+    addProblemData: emptyForm
   },
+
   reducers: {
-    // Universal update for any field in addProblemData
+    setProblemData: (state, action) => {
+      state.addProblemData = action.payload;
+    },
+
+    // Update a direct key inside the form
     updateProblemData: (state, action) => {
       const { key, value } = action.payload;
       state.addProblemData[key] = value;
     },
-    
-    // Update nested fields (like description.text, description.imgUrl)
+
+    // Update a nested field inside the form
     updateNestedProblemData: (state, action) => {
       const { parentKey, childKey, value } = action.payload;
-      if (state.addProblemData[parentKey]) {
-        state.addProblemData[parentKey][childKey] = value;
-      }
+      state.addProblemData[parentKey][childKey] = value;
     },
-    
-    // Universal array operations for ANY array in addProblemData
+
+    // Generic operations for array fields
     addToArray: (state, action) => {
       const { arrayKey, item } = action.payload;
-      if (state.addProblemData[arrayKey]) {
-        state.addProblemData[arrayKey].push(item);
-      }
+      state.addProblemData[arrayKey].push(item);
     },
-    
+
     removeFromArray: (state, action) => {
       const { arrayKey, index } = action.payload;
-      if (state.addProblemData[arrayKey]) {
-        state.addProblemData[arrayKey].splice(index, 1);
-      }
+      state.addProblemData[arrayKey].splice(index, 1);
     },
-    
+
     updateArrayItem: (state, action) => {
       const { arrayKey, index, updates } = action.payload;
-      if (state.addProblemData[arrayKey] && state.addProblemData[arrayKey][index]) {
-        Object.assign(state.addProblemData[arrayKey][index], updates);
-      }
+      Object.assign(state.addProblemData[arrayKey][index], updates);
     },
-    
-    // Reset entire form
+
+    // Reset form for Add Problem page
     resetProblemData: (state) => {
-      state.addProblemData = {
-        title: "",
-        description: {
-          text: "",
-          imgUrl: ""
-        },
-        problemTags: [],
-        companyTags: [],
-        hints: [],
-        acceptanceRate: 0,
-        visibleTestCases: [],
-        hiddentestCases: [],
-        boilerplate: [],
-        refrenceSol: [],
-        problemCreater: "",
-        difficulty: "easy"
-      };
+      state.addProblemData = JSON.parse(JSON.stringify(emptyForm));
     }
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(getProblems.pending, (state) => {
         state.loading = true;
-        state.error = false;
+        state.error = null;
       })
       .addCase(getProblems.fulfilled, (state, action) => {
         const backendCount = action.payload.count;
-        if (state.number !== backendCount) {
-          state.number = backendCount;
-        }
+        if (state.number !== backendCount) state.number = backendCount;
+
         state.data = action.payload.data;
         state.loading = false;
       })
@@ -133,6 +150,7 @@ const problemSlice = createSlice({
         state.error = action.payload;
         state.loading = false;
       })
+
       .addCase(addProblem.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -143,19 +161,34 @@ const problemSlice = createSlice({
         state.number = (state.number || 0) + 1;
       })
       .addCase(addProblem.rejected, (state, action) => {
+        state.error = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchProblem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProblem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.addProblemData = action.payload.data; 
+      })
+      .addCase(fetchProblem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
-  },
+      })
+  }
 });
 
 export default problemSlice.reducer;
-export const { 
-  updateProblemData, 
-  updateNestedProblemData, 
-  addToArray, 
-  removeFromArray, 
+
+export const {
+  setProblemData,
+  updateProblemData,
+  updateNestedProblemData,
+  addToArray,
+  removeFromArray,
   updateArrayItem,
-  resetProblemData 
+  resetProblemData
 } = problemSlice.actions;
-export { getProblems, addProblem };
+
+export { getProblems, addProblem,fetchProblem };

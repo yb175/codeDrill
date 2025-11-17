@@ -4,8 +4,12 @@ import ProblemDetailsForm from "../../components/problemDetails";
 import SolutionEditor from "../../components/solutionEditor";
 import ExecutionOutput from "../../components/executionOutput";
 import PageActions from "../../components/pageAction";
-
+import { resetProblemData } from "../../slice/problemSlice"; 
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 export default function AddProblemPage() {
+  const dispatch = useDispatch();
+  dispatch(resetProblemData());
   return (
     <div className="min-h-screen p-8 text-base-content mt-10">
       {/* Main Page Grid */}

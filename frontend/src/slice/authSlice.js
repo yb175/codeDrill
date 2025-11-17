@@ -59,14 +59,34 @@ const logout = createAsyncThunk(
     }
   }
 );
+export const fetchProblemSolved = createAsyncThunk(
+  "users/fetchProblemSolved",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axiosClient.get("/user/problem-solved");
+      return res.data.data; // MUST match your backend response
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { success: false, message: "Server Error" }
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
+    profile: {
+      problemSolved: [],
+    },
     user: null,
     loading: false,
     isVerified: false,
     error: null,
     signUpData: null,
+    loadingStates: {
+      solved: "idle",
+    },
   },
   reducers: {
     resetSignUpData: (state) => {
@@ -131,9 +151,19 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     });
+    builder.addCase(fetchProblemSolved.pending, (state) => {
+      state.loadingStates.solved = "loading";
+    });
+    builder.addCase(fetchProblemSolved.fulfilled, (state, action) => {
+      state.profile.problemSolved = action.payload || [];
+      state.loadingStates.solved = "success";
+    });
+    builder.addCase(fetchProblemSolved.rejected, (state) => {
+      state.loadingStates.solved = "error";
+    });
   },
 });
 
 export default authSlice.reducer;
-export const { resetSignUpData , resetError} = authSlice.actions;
+export const { resetSignUpData, resetError } = authSlice.actions;
 export { checkToken, loginWithPassword, signUp, logout };

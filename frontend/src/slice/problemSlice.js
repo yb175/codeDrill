@@ -1,6 +1,6 @@
 /**
  * Problem Slice Structure (JSON Schema)
- * 
+ *
  * {
  *   number: Number | null,
  *   loading: Boolean,
@@ -29,15 +29,18 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "../../config/axiosClient";
 
-
 const getProblems = createAsyncThunk(
   "problems/get",
   async ({ page, limit }, { rejectWithValue }) => {
     try {
-      const response = await axiosClient.get(`/problems?page=${page}&limit=${limit}`);
+      const response = await axiosClient.get(
+        `/problems?page=${page}&limit=${limit}`
+      );
       return response.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data || { success: false, message: "server error" });
+      return rejectWithValue(
+        err.response?.data || { success: false, message: "server error" }
+      );
     }
   }
 );
@@ -49,27 +52,67 @@ const addProblem = createAsyncThunk(
       const response = await axiosClient.post(`/problems`, problem);
       return response.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data || { success: false, message: "server error" });
+      return rejectWithValue(
+        err.response?.data || { success: false, message: "server error" }
+      );
     }
   }
 );
 
 const fetchProblem = createAsyncThunk(
   "problems/fetch",
-  async (id , { rejectWithValue})=>{
-    try{
+  async (id, { rejectWithValue }) => {
+    try {
       const response = await axiosClient.get(`/problems/${id}`);
       return response.data;
-    }catch(err){
-      return rejectWithValue(err.response?.data || {success:false, message:"server error"})
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { success: false, message: "server error" }
+      );
     }
   }
-)
+);
+
+const editProblem = createAsyncThunk(
+  "problems/edit",
+  async (problem, { rejectWithValue }) => {
+    try {
+      // 1) Extract only NEW test cases
+      const cleanedData = {
+        ...problem,
+        visibleTestCases: problem.visibleTestCases.filter((tc) => tc?.isNew),
+        hiddentestCases: problem.hiddentestCases.filter((tc) => tc?.isNew),
+      };
+
+      // 2) Remove isNew flag before sending to backend
+      cleanedData.visibleTestCases = cleanedData.visibleTestCases.map((tc) => {
+        const copy = { ...tc };
+        delete copy.isNew;
+        return copy;
+      });
+
+      cleanedData.hiddentestCases = cleanedData.hiddentestCases.map((tc) => {
+        const copy = { ...tc };
+        delete copy.isNew;
+        return copy;
+      });
+
+      // 3) Send only the cleaned new test cases
+      const response = await axiosClient.patch(`/problems`, cleanedData);
+
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { success: false, message: "server error" }
+      );
+    }
+  }
+);
 const emptyForm = {
   title: "",
   description: {
     text: "",
-    imgUrl: ""
+    imgUrl: "",
   },
   problemTags: [],
   companyTags: [],
@@ -80,9 +123,8 @@ const emptyForm = {
   boilerplate: [],
   refrenceSol: [],
   problemCreater: "",
-  difficulty: "easy"
+  difficulty: "easy",
 };
-
 
 const problemSlice = createSlice({
   name: "problem",
@@ -91,7 +133,7 @@ const problemSlice = createSlice({
     loading: false,
     data: null,
     error: null,
-    addProblemData: emptyForm
+    addProblemData: emptyForm,
   },
 
   reducers: {
@@ -114,7 +156,7 @@ const problemSlice = createSlice({
     // Generic operations for array fields
     addToArray: (state, action) => {
       const { arrayKey, item } = action.payload;
-      state.addProblemData[arrayKey].push(item);
+      state.addProblemData[arrayKey].push({ ...item, isNew: true });
     },
 
     removeFromArray: (state, action) => {
@@ -130,7 +172,7 @@ const problemSlice = createSlice({
     // Reset form for Add Problem page
     resetProblemData: (state) => {
       state.addProblemData = JSON.parse(JSON.stringify(emptyForm));
-    }
+    },
   },
 
   extraReducers: (builder) => {
@@ -170,13 +212,54 @@ const problemSlice = createSlice({
       })
       .addCase(fetchProblem.fulfilled, (state, action) => {
         state.loading = false;
-        state.addProblemData = action.payload.data; 
+        const data = action.payload.data || {};
+
+        state.addProblemData = {
+          ...data,
+
+          visibleTestCases: Array.isArray(data.visibleTestCases)
+            ? data.visibleTestCases.map((tc) => ({ ...tc, isNew: false }))
+            : [],
+
+          hiddentestCases: Array.isArray(data.hiddentestCases)
+            ? data.hiddentestCases.map((tc) => ({ ...tc, isNew: false }))
+            : [],
+        };
       })
       .addCase(fetchProblem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-  }
+      .addCase(editProblem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(editProblem.fulfilled, (state, action) => {
+        state.loading = false;
+
+        // If backend did not send updated data, avoid crash
+        if (!action.payload || !action.payload.data) {
+          console.warn("⚠ editProblem returned no data");
+          return;
+        }
+
+        const updated = action.payload.data;
+
+        // Update table list safely
+        if (Array.isArray(state.data)) {
+          state.data = state.data.map((p) =>
+            p._id === updated._id ? updated : p
+          );
+        }
+
+        // Update form safely
+        state.addProblemData = updated;
+      })
+      .addCase(editProblem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
 export default problemSlice.reducer;
@@ -188,7 +271,7 @@ export const {
   addToArray,
   removeFromArray,
   updateArrayItem,
-  resetProblemData
+  resetProblemData,
 } = problemSlice.actions;
 
-export { getProblems, addProblem,fetchProblem };
+export { getProblems, addProblem, fetchProblem, editProblem };

@@ -84,10 +84,10 @@ const ProblemManagement = ({
                 </span>
               </div>
 
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 hover:text-white transition-all shadow-sm hover:shadow-md">
+              <Link to={`Edit/${p.problemNumber}`} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 hover:text-white transition-all shadow-sm hover:shadow-md">
                 <Pencil className="w-4 h-4" />
                 Edit
-              </button>
+              </Link>
             </div>
           ))}
         </div>

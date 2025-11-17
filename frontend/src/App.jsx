@@ -13,6 +13,7 @@ import Admin from "./pages/admin";
 import AddProblem from "./pages/addProblem";
 import EditProblem from "./pages/editProblem";
 import AdminLayout from "./layout/adminLayout";
+import ProblemsPage from "./pages/problems";
 function App() {
   const style = `
     @keyframes spin-slow {
@@ -63,6 +64,7 @@ function App() {
               <Route path="Add" element={<AddProblem />} />{" "}
               <Route path="Edit/:id" element={<EditProblem />} />
             </Route>
+            <Route path="/problems" element={<ProblemsPage />} />
           </Routes>
         </main>
 

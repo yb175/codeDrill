@@ -14,6 +14,7 @@ import AddProblem from "./pages/addProblem";
 import EditProblem from "./pages/editProblem";
 import AdminLayout from "./layout/adminLayout";
 import ProblemsPage from "./pages/problems";
+import ProblemWorkSpace from "./pages/problems";
 function App() {
   const style = `
     @keyframes spin-slow {
@@ -65,6 +66,7 @@ function App() {
               <Route path="Edit/:id" element={<EditProblem />} />
             </Route>
             <Route path="/problems" element={<ProblemsPage />} />
+            <Route path="/problems/:id" element={<ProblemWorkSpace />} />
           </Routes>
         </main>
 

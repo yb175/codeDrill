@@ -19,7 +19,6 @@ export default function ProblemWorkspace() {
   const CuteShimmer = () => (
     <div className="w-full animate-pulse">
       <div className="space-y-4">
-
         <div className="h-6 w-2/3 rounded-lg bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
 
         <div className="h-4 w-1/3 rounded-lg bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a]" />
@@ -36,7 +35,6 @@ export default function ProblemWorkspace() {
           <div className="h-4 w-5/6 rounded-md bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
           <div className="h-4 w-2/3 rounded-md bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
         </div>
-
       </div>
     </div>
   );
@@ -64,9 +62,9 @@ export default function ProblemWorkspace() {
   }
 
   return (
-    <main className="flex h-full overflow-hidden">
+    <main className="flex h-screen w-full  text-white overflow-hidden">
       {/* LEFT */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:w-1/2">
+      <div className="flex-1 overflow-y-scroll p-4 md:p-6 lg:w-1/2">
         <ProblemDetails
           title={problem.title}
           breadcrumbs={[
@@ -102,20 +100,10 @@ export default function ProblemWorkspace() {
       </div>
 
       {/* RIGHT */}
-      <div className="hidden lg:flex flex-col flex-1 border-l border-gray-700 lg:w-1/2">
+      <div className="hidden lg:flex flex-col flex-1 border-l border-gray-700 lg:w-1/2 overflow-y-hidden">
         <EditorPanel
-          defaultCode={
-            (problem.boilerplate &&
-              problem.boilerplate[0] &&
-              problem.boilerplate[0].snippet) ||
-            ""
-          }
-          language={
-            (problem.boilerplate &&
-              problem.boilerplate[0] &&
-              problem.boilerplate[0].language) ||
-            "python"
-          }
+          // PASS THE FULL ARRAY instead of just one string
+          boilerplates={problem.boilerplate || []}
         />
       </div>
     </main>

@@ -26,10 +26,11 @@ export default function ProblemsPage() {
   const limit = 10;
 
   useEffect(() => {
-    if (!problemsData[page]) {
+    if (!problemsData?.[page]) {
       dispatch(getProblems({ page, limit }));
     }
-    if (!profile?.problemSolved) {
+
+    if (!profile || !Array.isArray(profile.problemSolved)) {
       dispatch(fetchProblemSolved());
     }
   }, [dispatch, page]);

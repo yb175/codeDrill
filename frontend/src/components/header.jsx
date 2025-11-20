@@ -1,12 +1,22 @@
-import { Code, LogIn, User } from "lucide-react";
+import { Code, LogIn } from "lucide-react";
 import { Link } from "react-router";
 import { useSelector } from "react-redux";
 import ProfileMenu from "./profileMenu";
+
 const Header = () => {
   const isVerified = useSelector((state) => state.auth.isVerified);
   const user = useSelector((state) => state.auth.user);
   const loading = useSelector((state) => state.auth.loading);
   const firstLetter = user?.name ? user.name.charAt(0).toUpperCase() : "U";
+
+  // FIXED: Manual slug map for ABSOLUTE route safety
+  const menuItems = [
+    { label: "Home", path: "/" },
+    { label: "Problems", path: "/problems" },
+    { label: "AI Features", path: "/ai-features" },
+    { label: "Discussion", path: "/discussion" },
+    user?.role === "admin" && { label: "Admin", path: "/admin" },
+  ].filter(Boolean);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 p-4 backdrop-blur-sm bg-gray-950/50 border-b border-purple-900/40 shadow-xl">
@@ -16,18 +26,16 @@ const Header = () => {
         </div>
 
         <nav className="flex space-x-6 text-sm font-medium">
-          {["Home", "Problems", "AI Features", "Discussion", user?.role === "admin" && "Admin"]
-  .filter(Boolean)
-  .map((item) => (
-    <Link
-      to={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
-      key={item}
-      className="text-gray-300 hover:text-purple-400 transition duration-300 relative group"
-    >
-      {item}
-      <span className="absolute left-0 bottom-0 w-full h-0.5 bg-purple-400 origin-bottom-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-    </Link>
-  ))}
+          {menuItems.map((item) => (
+            <Link
+              to={item.path}
+              key={item.path}
+              className="text-gray-300 hover:text-purple-400 transition duration-300 relative group"
+            >
+              {item.label}
+              <span className="absolute left-0 bottom-0 w-full h-0.5 bg-purple-400 origin-bottom-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+            </Link>
+          ))}
         </nav>
 
         {loading ? (

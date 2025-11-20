@@ -1,86 +1,123 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router";
+import { getProblemById } from "../../slice/problemWorkspaceSlice";
 import ProblemDetails from "./problemDetails";
 import EditorPanel from "./editorPanel";
-export default function ProblemWorkspace() {
-  const problemData = {
-    title: "121. Best Time to Buy and Sell Stock",
-    breadcrumbs: [
-      { name: "Problems", href: "#" },
-      { name: "Arrays", href: "#" },
-      { name: "Best Time to Buy and Sell Stock", href: "#" },
-    ],
-    tags: [
-      { name: "Easy", color: "bg-green-700/20 text-green-400" },
-      { name: "Array", color: "bg-gray-700/20 text-gray-400" },
-      { name: "Dynamic Programming", color: "bg-gray-700/20 text-gray-400" },
-    ],
-    description: [
-      "You are given an array prices where prices[i] is the price of a given stock on the ith day.",
-      "You want to maximize profit by choosing a day to buy and a future day to sell.",
-      "Return the maximum profit possible. If no profit is possible, return 0."
-    ],
-    examples: [
-      {
-        id: 1,
-        input: "prices = [7,1,5,3,6,4]",
-        output: "5",
-        explanation: "Buy on day 2 and sell on day 5 → profit = 5."
-      },
-      {
-        id: 2,
-        input: "prices = [7,6,4,3,1]",
-        output: "0",
-        explanation: "No profitable transaction possible."
-      }
-    ],
-    hints: [
-      "Track minimum price seen so far.",
-      "Profit = current price - min price so far."
-    ],
-    defaultCode: `class Solution:
-    def maxProfit(self, prices):
-        min_price = float('inf')
-        max_profit = 0
-        
-        for p in prices:
-            if p < min_price:
-                min_price = p
-            else:
-                max_profit = max(max_profit, p - min_price)
-        
-        return max_profit`,
-    language: "Python 3"
-  };
 
-  const discussions = [
-    { id: 1, title: "O(n) solution explained", author: "coderx", posts: 42, votes: 102, tags: ["solution"] },
-    { id: 2, title: "DP approach timing out", author: "newbie", posts: 15, votes: 7, tags: ["dp"] },
-  ];
+export default function ProblemWorkspace() {
+  const { id } = useParams();
+  const dispatch = useDispatch();
+
+  const { problem, loading, error } = useSelector((s) => s.problemById);
+
+  useEffect(() => {
+    dispatch(getProblemById({ id }));
+  }, [id]);
+
+  /* ---------------- CUTE SHIMMER ---------------- */
+  const CuteShimmer = () => (
+    <div className="w-full animate-pulse">
+      <div className="space-y-4">
+
+        <div className="h-6 w-2/3 rounded-lg bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
+
+        <div className="h-4 w-1/3 rounded-lg bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a]" />
+
+        <div className="h-32 w-full rounded-xl bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-24 rounded-xl bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a]" />
+          <div className="h-24 rounded-xl bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a]" />
+        </div>
+
+        <div className="space-y-2 pt-2">
+          <div className="h-4 w-full rounded-md bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
+          <div className="h-4 w-5/6 rounded-md bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
+          <div className="h-4 w-2/3 rounded-md bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#111827]" />
+        </div>
+
+      </div>
+    </div>
+  );
+
+  /* -------------- LOADING UI ---------------- */
+  if (loading) {
+    return (
+      <main className="flex h-full overflow-hidden p-6 gap-6">
+        <div className="flex-1">
+          <CuteShimmer />
+        </div>
+        <div className="hidden lg:block w-1/2">
+          <CuteShimmer />
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !problem) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        Failed to load problem.
+      </div>
+    );
+  }
 
   return (
     <main className="flex h-full overflow-hidden">
-
       {/* LEFT */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:w-1/2">
         <ProblemDetails
-          title={problemData.title}
-          breadcrumbs={problemData.breadcrumbs}
-          tags={problemData.tags}
-          description={problemData.description}
-          examples={problemData.examples}
-          hints={problemData.hints}
-          discussions={discussions}
+          title={problem.title}
+          breadcrumbs={[
+            { name: "Problems", href: "/problems" },
+            { name: problem.difficulty, href: "#" },
+            { name: problem.title, href: "#" },
+          ]}
+          tags={[
+            {
+              name: problem.difficulty,
+              color:
+                problem.difficulty === "easy"
+                  ? "bg-green-700/20 text-green-400"
+                  : problem.difficulty === "medium"
+                  ? "bg-yellow-700/20 text-yellow-400"
+                  : "bg-red-700/20 text-red-400",
+            },
+            ...(problem.problemTags || []).map((t) => ({
+              name: t,
+              color: "bg-gray-700/20 text-gray-400",
+            })),
+          ]}
+          description={[problem?.description?.text || ""]}
+          examples={(problem.visibleTestCases || []).map((ex, i) => ({
+            id: i + 1,
+            input: ex.testCase,
+            output: ex.output,
+            explanation: ex.description,
+          }))}
+          hints={problem.hints || []}
+          discussions={[]}
         />
       </div>
 
       {/* RIGHT */}
       <div className="hidden lg:flex flex-col flex-1 border-l border-gray-700 lg:w-1/2">
         <EditorPanel
-          defaultCode={problemData.defaultCode}
-          language={problemData.language}
+          defaultCode={
+            (problem.boilerplate &&
+              problem.boilerplate[0] &&
+              problem.boilerplate[0].snippet) ||
+            ""
+          }
+          language={
+            (problem.boilerplate &&
+              problem.boilerplate[0] &&
+              problem.boilerplate[0].language) ||
+            "python"
+          }
         />
       </div>
-
     </main>
   );
 }

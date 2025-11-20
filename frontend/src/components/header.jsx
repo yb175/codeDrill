@@ -16,16 +16,18 @@ const Header = () => {
         </div>
 
         <nav className="flex space-x-6 text-sm font-medium">
-          {["Home", "Problems", "AI Features", "Discussion",user?.role === "admin" && "Admin"].map((item) => (
-            <Link
-              to={`/${item}`}
-              key={item}
-              className="text-gray-300 hover:text-purple-400 transition duration-300 relative group"
-            >
-              {item}
-              <span className="absolute left-0 bottom-0 w-full h-0.5 bg-purple-400 origin-bottom-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-            </Link>
-          ))}
+          {["Home", "Problems", "AI Features", "Discussion", user?.role === "admin" && "Admin"]
+  .filter(Boolean)
+  .map((item) => (
+    <Link
+      to={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
+      key={item}
+      className="text-gray-300 hover:text-purple-400 transition duration-300 relative group"
+    >
+      {item}
+      <span className="absolute left-0 bottom-0 w-full h-0.5 bg-purple-400 origin-bottom-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+    </Link>
+  ))}
         </nav>
 
         {loading ? (

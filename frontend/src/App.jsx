@@ -13,7 +13,7 @@ import Admin from "./pages/admin";
 import AddProblem from "./pages/addProblem";
 import EditProblem from "./pages/editProblem";
 import AdminLayout from "./layout/adminLayout";
-import ProblemsPage from "./pages/problems";
+import ProblemsPage from "./pages/problemlist";
 import ProblemWorkSpace from "./pages/problems";
 function App() {
   const style = `

@@ -11,13 +11,11 @@ import { fetchProblemSolved } from "../slice/authSlice";
 export default function ProblemsPage() {
   const dispatch = useDispatch();
 
-  const {
-    data: problemsData,
-    loading,
-    number: totalCount,
-  } = useSelector((s) => s.problem);
+  const { data: problemsData, loading, number: totalCount } = useSelector(
+    (s) => s.problem
+  );
 
-  const { user, loadingStates, profile } = useSelector((s) => s.auth);
+  const { user, loadingStates ,profile} = useSelector((s) => s.auth);
 
   const problems = problemsData || [];
 
@@ -26,13 +24,8 @@ export default function ProblemsPage() {
   const limit = 10;
 
   useEffect(() => {
-    if (!problemsData?.[page]) {
-      dispatch(getProblems({ page, limit }));
-    }
-
-    if (!profile || !Array.isArray(profile.problemSolved)) {
-      dispatch(fetchProblemSolved());
-    }
+    dispatch(getProblems({ page, limit }));
+    dispatch(fetchProblemSolved());
   }, [dispatch, page]);
   console.log(profile);
   const handleNewProblem = () => {
@@ -72,6 +65,7 @@ export default function ProblemsPage() {
 
         <div className="grid grid-cols-12 gap-6 mt-4">
           <div className="col-span-8 space-y-4">
+
             {/* Show shimmer while loading */}
             {(loading || solvedLoading) && <ProblemTableShimmer />}
 

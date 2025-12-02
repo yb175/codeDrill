@@ -31,30 +31,47 @@ import axiosClient from "../../config/axiosClient";
 
 const getProblems = createAsyncThunk(
   "problems/get",
-  async ({ page, limit }, { rejectWithValue }) => {
+  async ({ page, limit }, { getState, rejectWithValue }) => {
+    const cacheKey = `${page}-${limit}`;
+    const { problem } = getState();
+
+    if (problem.cache[cacheKey]) {
+      const cachedData = problem.cache[cacheKey];
+      return {
+        cached: true,
+        data: cachedData.data,
+        count: cachedData.count,
+        page,
+        limit,
+      };
+    }
+
     try {
-      const response = await axiosClient.get(
-        `/problems?page=${page}&limit=${limit}`
-      );
-      return response.data;
+      const res = await axiosClient.get(`/problems?page=${page}&limit=${limit}`);
+      const payload = res.data;
+
+      return {
+        cached: false,
+        data: payload.data,
+        count: payload.count,
+        page,
+        limit,
+      };
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
+
 
 const addProblem = createAsyncThunk(
   "problems/add",
   async (problem, { rejectWithValue }) => {
     try {
-      const response = await axiosClient.post(`/problems`, problem);
-      return response.data;
+      const res = await axiosClient.post(`/problems`, problem);
+      return res.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
@@ -63,12 +80,10 @@ const fetchProblem = createAsyncThunk(
   "problems/fetch",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axiosClient.get(`/problems/${id}`);
-      return response.data;
+      const res = await axiosClient.get(`/problems/${id}`);
+      return res.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
@@ -77,43 +92,35 @@ const editProblem = createAsyncThunk(
   "problems/edit",
   async (problem, { rejectWithValue }) => {
     try {
-      // 1) Extract only NEW test cases
-      const cleanedData = {
+      const clean = {
         ...problem,
-        visibleTestCases: problem.visibleTestCases.filter((tc) => tc?.isNew),
-        hiddentestCases: problem.hiddentestCases.filter((tc) => tc?.isNew),
+        visibleTestCases: problem.visibleTestCases
+          .filter((t) => t?.isNew)
+          .map((t) => {
+            const c = { ...t };
+            delete c.isNew;
+            return c;
+          }),
+        hiddentestCases: problem.hiddentestCases
+          .filter((t) => t?.isNew)
+          .map((t) => {
+            const c = { ...t };
+            delete c.isNew;
+            return c;
+          }),
       };
 
-      // 2) Remove isNew flag before sending to backend
-      cleanedData.visibleTestCases = cleanedData.visibleTestCases.map((tc) => {
-        const copy = { ...tc };
-        delete copy.isNew;
-        return copy;
-      });
-
-      cleanedData.hiddentestCases = cleanedData.hiddentestCases.map((tc) => {
-        const copy = { ...tc };
-        delete copy.isNew;
-        return copy;
-      });
-
-      // 3) Send only the cleaned new test cases
-      const response = await axiosClient.patch(`/problems`, cleanedData);
-
-      return response.data;
+      const res = await axiosClient.patch(`/problems`, clean);
+      return res.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
+
 const emptyForm = {
   title: "",
-  description: {
-    text: "",
-    imgUrl: "",
-  },
+  description: { text: "", imgUrl: "" },
   problemTags: [],
   companyTags: [],
   hints: [],
@@ -133,132 +140,137 @@ const problemSlice = createSlice({
     loading: false,
     data: null,
     error: null,
+    cache: {},
     addProblemData: emptyForm,
   },
 
   reducers: {
-    setProblemData: (state, action) => {
-      state.addProblemData = action.payload;
+    setProblemData: (s, a) => {
+      s.addProblemData = a.payload;
     },
-
-    // Update a direct key inside the form
-    updateProblemData: (state, action) => {
-      const { key, value } = action.payload;
-      state.addProblemData[key] = value;
+    updateProblemData: (s, a) => {
+      s.addProblemData[a.payload.key] = a.payload.value;
     },
-
-    // Update a nested field inside the form
-    updateNestedProblemData: (state, action) => {
-      const { parentKey, childKey, value } = action.payload;
-      state.addProblemData[parentKey][childKey] = value;
+    updateNestedProblemData: (s, a) => {
+      s.addProblemData[a.payload.parentKey][a.payload.childKey] =
+        a.payload.value;
     },
-
-    // Generic operations for array fields
-    addToArray: (state, action) => {
-      const { arrayKey, item } = action.payload;
-      state.addProblemData[arrayKey].push({ ...item, isNew: true });
+addToArray: (s, a) => {
+      s.addProblemData[a.payload.arrayKey].push({
+        ...a.payload.item,
+        isNew: true,
+      });
     },
-
-    removeFromArray: (state, action) => {
-      const { arrayKey, index } = action.payload;
-      state.addProblemData[arrayKey].splice(index, 1);
+    removeFromArray: (s, a) => {
+      s.addProblemData[a.payload.arrayKey].splice(a.payload.index, 1);
     },
-
-    updateArrayItem: (state, action) => {
-      const { arrayKey, index, updates } = action.payload;
-      Object.assign(state.addProblemData[arrayKey][index], updates);
+    updateArrayItem: (s, a) => {
+      Object.assign(
+        s.addProblemData[a.payload.arrayKey][a.payload.index],
+        a.payload.updates
+      );
     },
-
-    // Reset form for Add Problem page
-    resetProblemData: (state) => {
-      state.addProblemData = JSON.parse(JSON.stringify(emptyForm));
+    resetProblemData: (s) => {
+      s.addProblemData = JSON.parse(JSON.stringify(emptyForm));
     },
   },
 
-  extraReducers: (builder) => {
-    builder
-      .addCase(getProblems.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(getProblems.fulfilled, (state, action) => {
-        const backendCount = action.payload.count;
-        if (state.number !== backendCount) state.number = backendCount;
+  extraReducers: (b) => {
+    b.addCase(getProblems.pending, (s) => {
+      s.loading = true;
+      s.error = null;
+    });
 
-        state.data = action.payload.data;
-        state.loading = false;
-      })
-      .addCase(getProblems.rejected, (state, action) => {
-        state.error = action.payload;
-        state.loading = false;
-      })
+    b.addCase(getProblems.fulfilled, (s, a) => {
+  if (a.payload.cached) {
+    s.data = a.payload.data;
+    s.number = a.payload.count;
+    s.loading = false;
+    return;
+  }
 
-      .addCase(addProblem.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(addProblem.fulfilled, (state, action) => {
-        state.loading = false;
-        state.data = [...(state.data || []), action.payload.data];
-        state.number = (state.number || 0) + 1;
-      })
-      .addCase(addProblem.rejected, (state, action) => {
-        state.error = action.payload;
-        state.loading = false;
-      })
-      .addCase(fetchProblem.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchProblem.fulfilled, (state, action) => {
-        state.loading = false;
-        const data = action.payload.data || {};
+  const { data, count, page, limit } = a.payload;
+  const cacheKey = `${page}-${limit}`;
 
-        state.addProblemData = {
-          ...data,
+  s.cache[cacheKey] = { data, count };
 
-          visibleTestCases: Array.isArray(data.visibleTestCases)
-            ? data.visibleTestCases.map((tc) => ({ ...tc, isNew: false }))
-            : [],
+  s.data = data;
+  s.number = count;
+  s.loading = false;
+});
 
-          hiddentestCases: Array.isArray(data.hiddentestCases)
-            ? data.hiddentestCases.map((tc) => ({ ...tc, isNew: false }))
-            : [],
-        };
-      })
-      .addCase(fetchProblem.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      .addCase(editProblem.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(editProblem.fulfilled, (state, action) => {
-        state.loading = false;
+    b.addCase(getProblems.rejected, (s, a) => {
+      s.loading = false;
+      s.error = a.payload;
+    });
 
-        // If backend did not send updated data, avoid crash
-        if (!action.payload || !action.payload.data) {
-          console.warn("⚠ editProblem returned no data");
-          return;
-        }
+    b.addCase(addProblem.pending, (s) => {
+      s.loading = true;
+      s.error = null;
+    });
 
-        const updated = action.payload.data;
+    b.addCase(addProblem.fulfilled, (s, a) => {
+      s.loading = false;
+      s.data = [...(s.data || []), a.payload.data];
+      s.number = (s.number || 0) + 1;
+      s.cache = {};
+    });
 
-        // Update table list safely
-        if (Array.isArray(state.data)) {
-          state.data = state.data.map((p) =>
-            p._id === updated._id ? updated : p
-          );
-        }
+    b.addCase(addProblem.rejected, (s, a) => {
+      s.loading = false;
+      s.error = a.payload;
+    });
 
-        // Update form safely
-        state.addProblemData = updated;
-      })
-      .addCase(editProblem.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+    b.addCase(fetchProblem.pending, (s) => {
+      s.loading = true;
+      s.error = null;
+    });
+
+    b.addCase(fetchProblem.fulfilled, (s, a) => {
+      s.loading = false;
+      const d = a.payload.data || {};
+
+      s.addProblemData = {
+        ...d,
+        visibleTestCases: (d.visibleTestCases || []).map((t) => ({
+          ...t,
+          isNew: false,
+        })),
+        hiddentestCases: (d.hiddentestCases || []).map((t) => ({
+          ...t,
+          isNew: false,
+        })),
+      };
+    });
+
+    b.addCase(fetchProblem.rejected, (s, a) => {
+      s.loading = false;
+      s.error = a.payload;
+    });
+
+    b.addCase(editProblem.pending, (s) => {
+      s.loading = true;
+      s.error = null;
+    });
+
+    b.addCase(editProblem.fulfilled, (s, a) => {
+      s.loading = false;
+      if (!a.payload?.data) return;
+
+      const updated = a.payload.data;
+
+      if (Array.isArray(s.data)) {
+        s.data = s.data.map((p) => (p._id === updated._id ? updated : p));
+      }
+
+      s.addProblemData = updated;
+      s.cache = {};
+    });
+
+    b.addCase(editProblem.rejected, (s, a) => {
+      s.loading = false;
+      s.error = a.payload;
+    });
   },
 });
 

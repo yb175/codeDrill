@@ -11,11 +11,13 @@ import { fetchProblemSolved } from "../slice/authSlice";
 export default function ProblemsPage() {
   const dispatch = useDispatch();
 
-  const { data: problemsData, loading, number: totalCount } = useSelector(
-    (s) => s.problem
-  );
+  const {
+    data: problemsData,
+    loading,
+    number: totalCount,
+  } = useSelector((s) => s.problem);
 
-  const { user, loadingStates ,profile} = useSelector((s) => s.auth);
+  const { loadingStates, profile } = useSelector((s) => s.auth);
 
   const problems = problemsData || [];
 
@@ -23,11 +25,16 @@ export default function ProblemsPage() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
+  // Fetch problems (caching handled inside problemSlice)
   useEffect(() => {
     dispatch(getProblems({ page, limit }));
+  }, [dispatch, page, limit]);
+
+  // Fetch solved problems once on mount
+  useEffect(() => {
     dispatch(fetchProblemSolved());
-  }, [dispatch, page]);
-  console.log(profile);
+  }, [dispatch]);
+
   const handleNewProblem = () => {
     const payload = {
       title: "Untitled Problem",
@@ -45,8 +52,7 @@ export default function ProblemsPage() {
     };
 
     dispatch(addProblem(payload)).then(() => {
-      dispatch(getProblems({ page: 1, limit }));
-      setPage(1);
+      setPage(1); // go to page 1
     });
   };
 
@@ -65,18 +71,14 @@ export default function ProblemsPage() {
 
         <div className="grid grid-cols-12 gap-6 mt-4">
           <div className="col-span-8 space-y-4">
-
-            {/* Show shimmer while loading */}
             {(loading || solvedLoading) && <ProblemTableShimmer />}
 
-            {/* Error alert if solved problems API fails */}
             {solvedError && (
               <div role="alert" className="alert alert-error shadow-lg">
                 <span>Failed to load solved problems. Please try again.</span>
               </div>
             )}
 
-            {/* Render actual table when all data is ready */}
             {!loading && !solvedLoading && !solvedError && (
               <ProblemsTable
                 problems={problems}

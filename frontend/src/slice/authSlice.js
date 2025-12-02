@@ -1,6 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "../../config/axiosClient";
 
+// Cache TTL - 5 minutes
+const SOLVED_TTL = 5 * 60 * 1000;
+
 const checkToken = createAsyncThunk(
   "users/checkToken",
   async (_, { rejectWithValue }) => {
@@ -8,9 +11,7 @@ const checkToken = createAsyncThunk(
       const response = await axiosClient.get(`/user/check`);
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "Server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
@@ -25,9 +26,7 @@ const loginWithPassword = createAsyncThunk(
       );
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "Server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
@@ -36,16 +35,14 @@ const signUp = createAsyncThunk(
   `users/signup`,
   async (credentials, { rejectWithValue }) => {
     try {
-      // Added 'credentials' to the post request here
       const response = await axiosClient.post(`/user/register`, credentials);
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "Server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
+
 const logout = createAsyncThunk(
   "users/logout",
   async (_, { rejectWithValue }) => {
@@ -53,22 +50,33 @@ const logout = createAsyncThunk(
       const response = await axiosClient.get(`/user/logout`);
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "Server error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
+
+// ⭐ UPDATED WITH CACHING
 export const fetchProblemSolved = createAsyncThunk(
   "users/fetchProblemSolved",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    const now = Date.now();
+
+    // Check cache
+    if (
+      auth.solvedCache &&
+      now - auth.solvedCacheTimestamp < SOLVED_TTL
+    ) {
+      console.log("[Solved Cache Hit]");
+      return { cached: true, data: auth.solvedCache };
+    }
+
     try {
+      console.log("[Solved Cache Miss]");
       const res = await axiosClient.get("/user/problem-solved");
-      return res.data.data; // MUST match your backend response
+      return { cached: false, data: res.data.data };
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { success: false, message: "Server Error" }
-      );
+      return rejectWithValue(err.response?.data || { success: false });
     }
   }
 );
@@ -76,18 +84,22 @@ export const fetchProblemSolved = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    profile: {
-      problemSolved: [],
-    },
+    profile: { problemSolved: [] },
     user: null,
     loading: false,
     isVerified: false,
     error: null,
     signUpData: null,
+
     loadingStates: {
       solved: "idle",
     },
+
+    // ⭐ cache storage
+    solvedCache: null,
+    solvedCacheTimestamp: 0,
   },
+
   reducers: {
     resetSignUpData: (state) => {
       state.signUpData = null;
@@ -96,74 +108,94 @@ const authSlice = createSlice({
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
-    builder.addCase(checkToken.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(checkToken.fulfilled, (state, action) => {
-      state.user = action.payload.data;
-      state.isVerified = !!action.payload.data;
-      state.loading = false;
-    });
-    builder.addCase(checkToken.rejected, (state, action) => {
-      state.error = action.payload;
-      state.loading = false;
-    });
-    builder.addCase(loginWithPassword.pending, (state) => {
-      state.loading = true;
-      state.error = null; // Also good to clear error on new login attempt
-    });
-    builder.addCase(loginWithPassword.fulfilled, (state, action) => {
-      state.user = action.payload.data;
-      state.isVerified = !!action.payload.data;
-      state.loading = false;
-    });
-    builder.addCase(loginWithPassword.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
 
-    // Added cases for signUp
-    builder.addCase(signUp.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(signUp.fulfilled, (state, action) => {
-      state.signUpData = action.payload.data;
-      state.isVerified = false;
-      state.loading = false;
-    });
-    builder.addCase(signUp.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-    builder.addCase(logout.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(logout.fulfilled, (state, action) => {
-      state.user = null;
-      state.isVerified = false;
-      state.loading = false;
-    });
-    builder.addCase(logout.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-    builder.addCase(fetchProblemSolved.pending, (state) => {
-      state.loadingStates.solved = "loading";
-    });
-    builder.addCase(fetchProblemSolved.fulfilled, (state, action) => {
-      state.profile.problemSolved = action.payload || [];
-      state.loadingStates.solved = "success";
-    });
-    builder.addCase(fetchProblemSolved.rejected, (state) => {
-      state.loadingStates.solved = "error";
-    });
+  extraReducers: (builder) => {
+    builder
+
+      // CHECK TOKEN
+      .addCase(checkToken.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(checkToken.fulfilled, (state, action) => {
+        state.user = action.payload.data;
+        state.isVerified = !!action.payload.data;
+        state.loading = false;
+      })
+      .addCase(checkToken.rejected, (state, action) => {
+        state.error = action.payload;
+        state.loading = false;
+      })
+
+      // LOGIN
+      .addCase(loginWithPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginWithPassword.fulfilled, (state, action) => {
+        state.user = action.payload.data;
+        state.isVerified = true;
+        state.loading = false;
+      })
+      .addCase(loginWithPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // SIGNUP
+      .addCase(signUp.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(signUp.fulfilled, (state, action) => {
+        state.signUpData = action.payload.data;
+        state.loading = false;
+      })
+      .addCase(signUp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // LOGOUT
+      .addCase(logout.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.isVerified = false;
+        state.solvedCache = null;
+        state.solvedCacheTimestamp = 0;
+        state.loading = false;
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ⭐ FETCH SOLVED WITH CACHE
+      .addCase(fetchProblemSolved.pending, (state) => {
+        state.loadingStates.solved = "loading";
+      })
+      .addCase(fetchProblemSolved.fulfilled, (state, action) => {
+        state.loadingStates.solved = "success";
+
+        // if cached: do NOT override cache timestamp
+        if (action.payload.cached) {
+          state.profile.problemSolved = action.payload.data;
+          return;
+        }
+
+        // else fresh data
+        state.profile.problemSolved = action.payload.data;
+        state.solvedCache = action.payload.data;
+        state.solvedCacheTimestamp = Date.now();
+      })
+      .addCase(fetchProblemSolved.rejected, (state) => {
+        state.loadingStates.solved = "error";
+      });
   },
 });
 
 export default authSlice.reducer;
+
 export const { resetSignUpData, resetError } = authSlice.actions;
 export { checkToken, loginWithPassword, signUp, logout };

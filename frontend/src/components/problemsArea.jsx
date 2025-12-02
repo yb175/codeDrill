@@ -1,7 +1,7 @@
 // src/components/ProblemsTable.jsx
 import React from "react";
 import { CheckCircle2, Hourglass } from "lucide-react";
-
+import { useNavigate } from "react-router";
 export default function ProblemsTable({
   problems,
   loading,
@@ -14,7 +14,7 @@ export default function ProblemsTable({
   const totalPages = Math.ceil((total || 0) / limit);
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-
+  const navigate = useNavigate();
   return (
     <div className="rounded-2xl border border-[#1f2937] bg-[#111827]/70 shadow-xl backdrop-blur-[6px] overflow-hidden">
       {/* Table */}
@@ -28,12 +28,17 @@ export default function ProblemsTable({
           </tr>
         </thead>
 
-        <tbody>
+        <tbody >
           {(loading ? [] : problems).map((p) => (
             <tr
               key={p._id}
               className="border-b border-[#1f2937] hover:bg-[#1e2533]/60 transition-all cursor-pointer"
+             onClick={() =>{
+              navigate(`/problems/${p.problemNumber}`)
+              console.log(p.problemNumber);
+             } }
             >
+              
               {/* Status with Lucide Icons */}
               <td className="px-6 py-4">
                 {solvedProblems?.some(

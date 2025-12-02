@@ -1,81 +1,161 @@
 import problemModel from "../../models/problem/problemSchema.js";
-/**
- * @fileoverview
- * Problem Controller
- * 
- * Contains functions to handle API requests related to problems.
- * 
- * Functions:
- *   - getAllProblem: Fetch paginated list of problems
- *   - getProblembyId: Fetch a single problem by its problemNumber
- * 
- * @module controllers/problemController
- */
+import {
+  cpp_boilerplate_template,
+  java_template,
+  python_boilerplate_template,
+  js_boilerplate_template
+} from "../../boilerplateTemplate/boilerplate.js";
 
 /**
- * @function getAllProblem
- * @description Fetch all problems with pagination support.
- * 
- * @param {Object} req - Express request object
- * @param {Object} req.query.page - Page number for pagination (integer, optional, default: 1)
- * @param {Object} req.query.limit - Number of items per page (integer, optional, default: 10)
- * 
- * @param {Object} res - Express response object
- * @returns {JSON} Returns JSON response with the following structure:
+ * ============================================================
+ * 🧠 FUNCTION: getAllProblem
+ * ============================================================
+ * @description Fetch paginated list of problems.
+ *
+ * @route GET /problems?page=1&limit=10
+ *
+ * @returns JSON:
  * {
- *   success: boolean,
- *   pageNumber: number,
- *   totalPages: number,
- *   data: Array<Object> // Array of problem objects
+ *   success: true,
+ *   pageNumber: 1,
+ *   count: 50,
+ *   totalPages: 5,
+ *   data: [
+ *     {
+ *       "title": "Two Sum",
+ *       "problemNumber": 1,
+ *       "problemTags": [...],
+ *       "companyTags": [...],
+ *       "difficulty": "easy"
+ *     }
+ *   ]
  * }
- * 
- * @throws Returns 500 status if server or DB error occurs.
  */
 export async function getAllProblem(req, res) {
   try {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
+
     const problems = await problemModel
       .find()
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('title problemNumber  problemTags companyTags difficulty') ;  
-    const total = await problemModel.countDocuments() ; 
-    res.status(200).json({
-        success : true , 
-        pageNumber : page ,
-        count : total ,
-        totalPages : Math.ceil(total/limit) ,
-        data : problems ,
-    })
+      .select("title problemNumber problemTags companyTags difficulty");
+
+    const total = await problemModel.countDocuments();
+
+    return res.status(200).json({
+      success: true,
+      pageNumber: page,
+      count: total,
+      totalPages: Math.ceil(total / limit),
+      data: problems,
+    });
+
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
   }
 }
 
-export async function getProblembyId(req,res){
-  try{
-    const id = req.params.id ; 
-    const problem = await problemModel.findOne({problemNumber : id}).select('title problemNumber description problemTags companyTags hints acceptanceRate visibleTestCases boilerplate difficulty refrenceSol');
-    
-    if(!problem){
-      res.status(404).json({
-        success : false , 
-        message: `problem not found` 
-      })
+/**
+ * ============================================================
+ * 🧠 FUNCTION: getProblembyId
+ * ============================================================
+ * @description Fetch a full problem by its problemNumber and
+ *              auto-generate language boilerplate template
+ *              from functionSignature stored in DB.
+ *
+ * @route GET /problems/:id
+ *
+ * @returns JSON (same format as before):
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "title": "...",
+ *     "problemNumber": 1,
+ *     "description": {...},
+ *     "problemTags": [...],
+ *     "companyTags": [...],
+ *     "hints": [...],
+ *     "acceptanceRate": 80,
+ *     "visibleTestCases": [...],
+ *     "hiddentestCases": [...],
+ *     "boilerplate": [
+ *        { "language": "cpp", "snippet": "class Solution {...}" },
+ *        { "language": "py",  "snippet": "class Solution: ..." }
+ *     ],
+ *     "refrenceSol": [...],
+ *     "difficulty": "easy"
+ *   }
+ * }
+ */
+export async function getProblembyId(req, res) {
+  try {
+    const id = req.params.id;
 
+    const problem = await problemModel
+      .findOne({ problemNumber: id })
+      .lean()
+      .select(
+        "title problemNumber description problemTags companyTags hints acceptanceRate visibleTestCases hiddentestCases boilerplate difficulty refrenceSol"
+      );
+
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        message: "problem not found",
+      });
     }
-    res.status(200).json({
-      success : true , 
-      data : problem
-    })
-  }catch(err){
-    res.status(500).json({
-      success : false , 
-      message : err.message
-    })
+
+    // ------------------------------------------------
+    // 🔥 Extract universal signature (ONE object)
+    // ------------------------------------------------
+    const sig = problem.boilerplate?.functionSignature;
+
+    if (!sig) {
+      return res.status(500).json({
+        success: false,
+        message: "Function signature missing in DB",
+      });
+    }
+
+    // ------------------------------------------------
+    // 🔥 Auto-generate for all supported languages
+    // ------------------------------------------------
+    const generated = [
+      {
+        language: "cpp",
+        snippet: cpp_boilerplate_template(sig.functionName, sig.returnType, sig.inputs),
+      },
+      {
+        language: "java",
+        snippet: java_template(sig.functionName, sig.returnType, sig.inputs),
+      },
+      {
+        language: "python",
+        snippet: python_boilerplate_template(sig.functionName, sig.returnType, sig.inputs),
+      },
+      {
+        language: "javascript",
+        snippet: js_boilerplate_template(sig.functionName, sig.returnType, sig.inputs),
+      }
+    ];
+
+    // overwrite boilerplate with newly generated array
+    problem.boilerplate = generated;
+
+    return res.status(200).json({
+      success: true,
+      data: problem,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 }

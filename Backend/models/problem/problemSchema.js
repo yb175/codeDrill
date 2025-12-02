@@ -96,11 +96,14 @@ const problemSchema = new Schema({
     },
   ],
   boilerplate: {
-    type: [boilerPlateSchema],
+    type: boilerPlateSchema,
     required: true,
   },
   refrenceSol: {
-    type: [boilerPlateSchema],
+    type: [{
+      language: { type: String, required: true },
+      snippet: { type: String, required: true },
+    }],
     required: true,
   },
   problemCreater: {

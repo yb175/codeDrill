@@ -1,48 +1,59 @@
 /**
- * @fileoverview Defines the Mongoose schema for boilerplate code templates in multiple programming languages.
+ * @fileoverview Defines the schema for storing a universal function signature
+ * for a coding problem (LeetCode-style).
+ *
+ * This schema DOES NOT store language-specific boilerplate code.
+ * Instead, it stores a *universal*, language-agnostic signature such as:
+ *
+ *  {
+ *    "functionName": "maxDepth",
+ *    "returnType": "int",
+ *    "inputs": [
+ *      { "name": "root", "type": "TreeNode" }
+ *    ]
+ *  }
+ *
+ * Each language (C++, Python, Java, JS) later maps this universal signature
+ * into its own syntax using a "type-mapper".
+ *
+ * Why is this schema better?
+ * ---------------------------
+ * ✔ No code duplication
+ * ✔ Easily generate boilerplate for ANY language
+ * ✔ LeetCode-style unified runner system
+ * ✔ Supports complex types (TreeNode, ListNode, int[], string[], etc.)
+ *
+ * Schema Fields:
+ * ---------------
+ * - functionSignature.functionName : String  
+ *      The method name the user must implement.
+ *
+ * - functionSignature.returnType : String  
+ *      Logical/universal type (NOT language dependent):
+ *      Examples: "int", "string", "int[]", "TreeNode", "ListNode"
+ *
+ * - functionSignature.inputs[] : Array  
+ *      List of parameters the function receives.
+ *      Each param has:
+ *        - name:  variable name (e.g., "root", "nums")
+ *        - type:  universal type (same type rules as returnType)
  *
  * @module models/schemas/boilerPlateSchema
- * @description
- * This module defines the `boilerPlateSchema`, which stores boilerplate code templates for different languages.
- * Each boilerplate document is typically embedded in a parent schema (like a Problem) to provide starter code
- * for users to write their solutions in the specified programming language.
- *
- * * **Schema Fields:**
- * - **`language`**: The programming language of the boilerplate. (String, required, trimmed, max length 100)
- * - **`snippet`**: The code snippet provided as boilerplate. (String, required, trimmed, max length 500)
- *
- * * **Dependencies:**
- * - `mongoose`: For schema definition.
- *
- * * **Output Format:**
- * @returns {mongoose.Schema} An uncompiled Mongoose Schema object named `boilerPlateSchema`.
- *
- * * **Usage Example:**
- * ```js
- * import boilerPlateSchema from './boilerPlateSchema.js';
- * // Used inside a parent schema:
- * const ProblemSchema = new Schema({
- *   title: { type: String, required: true },
- *   boilerplate: [boilerPlateSchema]
- * });
- * ```
  */
+
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 const boilerPlateSchema = new Schema({
-  language: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100, 
-  },
-  snippet: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 5000, 
+  functionSignature: {
+    functionName: { type: String, required: true },
+    returnType: { type: String, required: true },
+    inputs: [
+      {
+        name: { type: String, required: true },
+        type: { type: String, required: true },
+      }
+    ],
   },
 });
 
-export default boilerPlateSchema;
- 
+export default boilerPlateSchema

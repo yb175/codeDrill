@@ -2,9 +2,14 @@ import getLanguageCode from "../../utils/problem/langCode.js";
 import submissionModel from "../../models/submission/submission.js";
 import batchSubmit from "../../utils/submission/batchSubmit.js";
 import redisClient from "../../models/redis/client.js";
-import { Buffer } from "buffer"; 
+import { Buffer } from "buffer";
 import jwt from "jsonwebtoken";
 import decode from "../../utils/submission/decodebase64.js";
+import cpp_runner from "../../submissionTemplate/cpp_runner.js";
+import java_runner from "../../submissionTemplate/java_runner.js";
+import python_runner from "../../submissionTemplate/py_runner.js";
+import js_runner from "../../submissionTemplate/js_runner.js";
+
 /**
  * @route POST /submit
  * @desc Submits a code for a problem and evaluates it against hidden test cases
@@ -17,7 +22,7 @@ import decode from "../../utils/submission/decodebase64.js";
  * @param {Object} res - Express response object
  *
  * @returns {Object} JSON Response
- * 
+ *
  * @returnsExample 200 - Success
  * {
  *   "success": true,
@@ -79,7 +84,7 @@ import decode from "../../utils/submission/decodebase64.js";
 
 async function submitCode(req, res) {
   try {
-    const { code, problemNumber, language } = req.body;
+    let { code, problemNumber, language, functionName ,returnType, inputs } = req.body;
     if (!code || !problemNumber || !language) {
       return res.status(404).json({
         success: false,
@@ -93,7 +98,9 @@ async function submitCode(req, res) {
         message: "Language not supported",
       });
     }
-    const problem = JSON.parse(await redisClient.get(`problem:${problemNumber}`)); 
+    const problem = JSON.parse(
+      await redisClient.get(`problem:${problemNumber}`)
+    );
     if (!problem) {
       return res.status(404).json({
         success: false,
@@ -112,35 +119,35 @@ async function submitCode(req, res) {
       totalTestcases: hiddentestCases.length,
       code: code,
     });
-     const cachekey = newSubmission.generateCacheKey() ; 
-     const result = await redisClient.get(cachekey) ;
-    if(result){
-      const cachedSubmission = JSON.parse(result) ;
+    const cachekey = newSubmission.generateCacheKey();
+    const result = await redisClient.get(cachekey);
+    if (result) {
+      const cachedSubmission = JSON.parse(result);
       return res.status(200).json({
-          success: true,
-          message: "Code submitted successfully", 
-          data: cachedSubmission
-      })
-    } 
+        success: true,
+        message: "Code submitted successfully",
+        data: cachedSubmission,
+      });
+    }
     let submissions = [];
     for (let i = 0; i < hiddentestCases.length; i++) {
       const { testCase, output } = hiddentestCases[i];
+      const cleanInput = testCase.replace(/^"|"$/g, "");
       submissions.push({
         language_id: languageId,
-        source_code: Buffer.from(code).toString('base64'),
-        stdin: Buffer.from(testCase).toString('base64'),
-        expected_output: Buffer.from(output).toString('base64'),
+        source_code: Buffer.from(code).toString("base64"),
+        stdin: Buffer.from(cleanInput).toString("base64"),
+        expected_output: Buffer.from(output).toString("base64"),
       });
     }
     let runtime = 0;
     let memory = 0;
     let testcasesPassed = 0;
     let failedTest = null;
-    const submissionResult = (await batchSubmit(submissions)); 
-    const data = submissionResult.data ;
-    
-    for (let result of data) {
+    const submissionResult = await batchSubmit(submissions);
+    const data = submissionResult.data;
 
+    for (let result of data) {
       runtime += Math.ceil(parseFloat(result.time) || 0);
       memory = Math.max(memory, result.memory || 0);
       if (result.status_id == 3) {
@@ -152,32 +159,33 @@ async function submitCode(req, res) {
             expected_output: decode(result.expected_output),
             output: decode(result.stdout),
             err: decode(result.stderr),
-            status_id : result.status_id, 
-            compilation_output : decode(result.compile_output)
+            status_id: result.status_id,
+            compilation_output: decode(result.compile_output),
           };
         }
       }
     }
 
-    const submission = await submissionModel.findByIdAndUpdate(
-      newSubmission._id,
-      {
-        status:
-          testcasesPassed === hiddentestCases.length ? "solved" : "attempted",
-        runtime: runtime,
-        memory: memory,
-        testcasesPassed: testcasesPassed,
-        failedTest : failedTest , 
+    const submission = await submissionModel
+      .findByIdAndUpdate(
+        newSubmission._id,
+        {
+          status:
+            testcasesPassed === hiddentestCases.length ? "solved" : "attempted",
+          runtime: runtime,
+          memory: memory,
+          testcasesPassed: testcasesPassed,
+          failedTest: failedTest,
+        },
+        { new: true }
+      )
+      .select("-user -__v -createdAt -updatedAt");
+    redisClient.set(cachekey, JSON.stringify(submission), { EX: 3600 });
 
-      },
-      { new: true }
-    ).select("-user -__v -createdAt -updatedAt");
-    redisClient.set(cachekey,JSON.stringify(submission),{ EX: 3600 }) ;
-
-    if(testcasesPassed===hiddentestCases.length){
-       if(req.result.updateProblemSolved(req.problem._id)){
-            req.result.problemSolved 
-        } ; 
+    if (testcasesPassed === hiddentestCases.length) {
+      if (req.result.updateProblemSolved(req.problem._id)) {
+        req.result.problemSolved;
+      }
     }
     res.status(200).json({
       success: true,

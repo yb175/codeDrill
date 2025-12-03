@@ -46,13 +46,14 @@ async function validateProblem(data) {
       }
 
       const submissions = testCases.map(({ testCase, output }) => {
-        if (!testCase || !output)
-          throw new Error("invalid test case format");
+        if (!testCase || !output) throw new Error("invalid test case format");
 
         return {
           source_code: Buffer.from(snippet).toString("base64"),
           language_id: getLanguageCode(language),
-          stdin: Buffer.from(testCase).toString("base64"),
+          stdin: Buffer.from(
+            typeof testCase === "string" ? testCase : JSON.stringify(testCase)
+          ).toString("base64"),
           expected_output: Buffer.from(output).toString("base64"),
         };
       });

@@ -1,59 +1,26 @@
-/**
- * Problem Slice Structure (JSON Schema)
- *
- * {
- *   number: Number | null,
- *   loading: Boolean,
- *   data: Array | null,        // list of problems for table view
- *   error: Object | null,
- *   addProblemData: {          // reusable form state (Add + Edit)
- *     title: String,
- *     description: {
- *       text: String,
- *       imgUrl: String
- *     },
- *     problemTags: Array<String>,
- *     companyTags: Array<String>,
- *     hints: Array<Object>,
- *     acceptanceRate: Number,
- *     visibleTestCases: Array<Object>,
- *     hiddentestCases: Array<Object>,
- *     boilerplate: Array<Object>,
- *     refrenceSol: Array<Object>,
- *     problemCreater: String,
- *     difficulty: "easy" | "medium" | "hard"
- *   }
- * }
- */
-
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "../../config/axiosClient";
 
-const getProblems = createAsyncThunk(
+/* ------------------------ ASYNC THUNKS ------------------------ */
+
+export const getProblems = createAsyncThunk(
   "problems/get",
   async ({ page, limit }, { getState, rejectWithValue }) => {
     const cacheKey = `${page}-${limit}`;
     const { problem } = getState();
 
     if (problem.cache[cacheKey]) {
-      const cachedData = problem.cache[cacheKey];
-      return {
-        cached: true,
-        data: cachedData.data,
-        count: cachedData.count,
-        page,
-        limit,
-      };
+      return { cached: true, ...problem.cache[cacheKey], page, limit };
     }
 
     try {
-      const res = await axiosClient.get(`/problems?page=${page}&limit=${limit}`);
-      const payload = res.data;
-
+      const res = await axiosClient.get(
+        `/problems?page=${page}&limit=${limit}`
+      );
       return {
         cached: false,
-        data: payload.data,
-        count: payload.count,
+        data: res.data.data,
+        count: res.data.count,
         page,
         limit,
       };
@@ -63,8 +30,7 @@ const getProblems = createAsyncThunk(
   }
 );
 
-
-const addProblem = createAsyncThunk(
+export const addProblem = createAsyncThunk(
   "problems/add",
   async (problem, { rejectWithValue }) => {
     try {
@@ -76,7 +42,7 @@ const addProblem = createAsyncThunk(
   }
 );
 
-const fetchProblem = createAsyncThunk(
+export const fetchProblem = createAsyncThunk(
   "problems/fetch",
   async (id, { rejectWithValue }) => {
     try {
@@ -88,7 +54,7 @@ const fetchProblem = createAsyncThunk(
   }
 );
 
-const editProblem = createAsyncThunk(
+export const editProblem = createAsyncThunk(
   "problems/edit",
   async (problem, { rejectWithValue }) => {
     try {
@@ -96,18 +62,10 @@ const editProblem = createAsyncThunk(
         ...problem,
         visibleTestCases: problem.visibleTestCases
           .filter((t) => t?.isNew)
-          .map((t) => {
-            const c = { ...t };
-            delete c.isNew;
-            return c;
-          }),
+          .map((t) => ({ ...t, isNew: undefined })),
         hiddentestCases: problem.hiddentestCases
           .filter((t) => t?.isNew)
-          .map((t) => {
-            const c = { ...t };
-            delete c.isNew;
-            return c;
-          }),
+          .map((t) => ({ ...t, isNew: undefined })),
       };
 
       const res = await axiosClient.patch(`/problems`, clean);
@@ -118,6 +76,26 @@ const editProblem = createAsyncThunk(
   }
 );
 
+/* ------------------ FIXED runProblem ------------------ */
+
+export const runProblem = createAsyncThunk(
+  "problems/run",
+  async ({ problem, code, language }, { rejectWithValue }) => {
+    const payload = {
+      language,
+      code,
+      problemNumber: problem.problemNumber,
+      language: problem.language,
+      functionName: problem.functionName,
+      returnType: problem.returnType,
+      inputs: problem.inputs,
+    };
+    const res = await axiosClient.post(`/submissions/run`, payload);
+    return res.data;
+  }
+);
+/* ------------------------ EMPTY FORM ------------------------ */
+
 const emptyForm = {
   title: "",
   description: { text: "", imgUrl: "" },
@@ -127,11 +105,19 @@ const emptyForm = {
   acceptanceRate: 0,
   visibleTestCases: [],
   hiddentestCases: [],
-  boilerplate: [],
+  boilerplate: {
+    functionSignature: {
+      functionName: "",
+      returnType: "",
+      inputs: [],
+    },
+  },
   refrenceSol: [],
   problemCreater: "",
   difficulty: "easy",
 };
+
+/* ------------------------ SLICE ------------------------ */
 
 const problemSlice = createSlice({
   name: "problem",
@@ -142,137 +128,180 @@ const problemSlice = createSlice({
     error: null,
     cache: {},
     addProblemData: emptyForm,
+    runResult: null, // added ensure clean state
   },
 
   reducers: {
-    setProblemData: (s, a) => {
-      s.addProblemData = a.payload;
+    setProblemData: (state, action) => {
+      state.addProblemData = action.payload;
     },
-    updateProblemData: (s, a) => {
-      s.addProblemData[a.payload.key] = a.payload.value;
+
+    updateProblemData: (state, action) => {
+      const { key, value } = action.payload;
+      state.addProblemData[key] = value;
     },
-    updateNestedProblemData: (s, a) => {
-      s.addProblemData[a.payload.parentKey][a.payload.childKey] =
-        a.payload.value;
+
+    updateNestedProblemData: (state, action) => {
+      const { parentKey, childKey, value } = action.payload;
+      state.addProblemData[parentKey][childKey] = value;
     },
-addToArray: (s, a) => {
-      s.addProblemData[a.payload.arrayKey].push({
-        ...a.payload.item,
-        isNew: true,
-      });
-    },
-    removeFromArray: (s, a) => {
-      s.addProblemData[a.payload.arrayKey].splice(a.payload.index, 1);
-    },
-    updateArrayItem: (s, a) => {
-      Object.assign(
-        s.addProblemData[a.payload.arrayKey][a.payload.index],
-        a.payload.updates
-      );
-    },
-    resetProblemData: (s) => {
-      s.addProblemData = JSON.parse(JSON.stringify(emptyForm));
-    },
-  },
 
-  extraReducers: (b) => {
-    b.addCase(getProblems.pending, (s) => {
-      s.loading = true;
-      s.error = null;
-    });
-
-    b.addCase(getProblems.fulfilled, (s, a) => {
-  if (a.payload.cached) {
-    s.data = a.payload.data;
-    s.number = a.payload.count;
-    s.loading = false;
-    return;
-  }
-
-  const { data, count, page, limit } = a.payload;
-  const cacheKey = `${page}-${limit}`;
-
-  s.cache[cacheKey] = { data, count };
-
-  s.data = data;
-  s.number = count;
-  s.loading = false;
-});
-
-    b.addCase(getProblems.rejected, (s, a) => {
-      s.loading = false;
-      s.error = a.payload;
-    });
-
-    b.addCase(addProblem.pending, (s) => {
-      s.loading = true;
-      s.error = null;
-    });
-
-    b.addCase(addProblem.fulfilled, (s, a) => {
-      s.loading = false;
-      s.data = [...(s.data || []), a.payload.data];
-      s.number = (s.number || 0) + 1;
-      s.cache = {};
-    });
-
-    b.addCase(addProblem.rejected, (s, a) => {
-      s.loading = false;
-      s.error = a.payload;
-    });
-
-    b.addCase(fetchProblem.pending, (s) => {
-      s.loading = true;
-      s.error = null;
-    });
-
-    b.addCase(fetchProblem.fulfilled, (s, a) => {
-      s.loading = false;
-      const d = a.payload.data || {};
-
-      s.addProblemData = {
-        ...d,
-        visibleTestCases: (d.visibleTestCases || []).map((t) => ({
-          ...t,
-          isNew: false,
-        })),
-        hiddentestCases: (d.hiddentestCases || []).map((t) => ({
-          ...t,
-          isNew: false,
-        })),
+    updateFunctionSignature: (state, action) => {
+      state.addProblemData.boilerplate.functionSignature = {
+        ...state.addProblemData.boilerplate.functionSignature,
+        ...action.payload,
       };
-    });
+    },
 
-    b.addCase(fetchProblem.rejected, (s, a) => {
-      s.loading = false;
-      s.error = a.payload;
-    });
+    updateFunctionInputs: (state, action) => {
+      state.addProblemData.boilerplate.functionSignature.inputs =
+        action.payload;
+    },
 
-    b.addCase(editProblem.pending, (s) => {
-      s.loading = true;
-      s.error = null;
-    });
+    addToArray: (state, action) => {
+      const { arrayKey, item } = action.payload;
+      state.addProblemData[arrayKey].push({ ...item, isNew: true });
+    },
 
-    b.addCase(editProblem.fulfilled, (s, a) => {
-      s.loading = false;
-      if (!a.payload?.data) return;
+    removeFromArray: (state, action) => {
+      const { arrayKey, index } = action.payload;
+      state.addProblemData[arrayKey].splice(index, 1);
+    },
 
-      const updated = a.payload.data;
+    updateArrayItem: (state, action) => {
+      const { arrayKey, index, updates } = action.payload;
+      Object.assign(state.addProblemData[arrayKey][index], updates);
+    },
 
-      if (Array.isArray(s.data)) {
-        s.data = s.data.map((p) => (p._id === updated._id ? updated : p));
-      }
+    resetProblemData: (state) => {
+      state.addProblemData = JSON.parse(JSON.stringify(emptyForm));
+    },
+  },
 
-      s.addProblemData = updated;
-      s.cache = {};
-    });
+  /* ------------------------ EXTRA REDUCERS ------------------------ */
 
-    b.addCase(editProblem.rejected, (s, a) => {
-      s.loading = false;
-      s.error = a.payload;
-    });
+  extraReducers: (builder) => {
+    builder
+
+      /* -------- GET -------- */
+      .addCase(getProblems.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getProblems.fulfilled, (state, action) => {
+        const { cached, data, count, page, limit } = action.payload;
+
+        if (!cached) {
+          const cacheKey = `${page}-${limit}`;
+          state.cache[cacheKey] = { data, count };
+        }
+
+        state.data = data;
+        state.number = count;
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(getProblems.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      /* -------- ADD -------- */
+      .addCase(addProblem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addProblem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.data = [...(state.data || []), action.payload.data];
+        state.number = (state.number || 0) + 1;
+        state.cache = {};
+      })
+      .addCase(addProblem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      /* -------- FETCH -------- */
+      .addCase(fetchProblem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProblem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+
+        const d = action.payload.data || {};
+        state.addProblemData = {
+          ...d,
+          visibleTestCases: (d.visibleTestCases || []).map((t) => ({
+            ...t,
+            isNew: false,
+          })),
+          hiddentestCases: (d.hiddentestCases || []).map((t) => ({
+            ...t,
+            isNew: false,
+          })),
+        };
+      })
+      .addCase(fetchProblem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      /* -------- EDIT -------- */
+      .addCase(editProblem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(editProblem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+
+        const updated = action.payload?.data;
+        if (!updated) return;
+
+        if (Array.isArray(state.data)) {
+          state.data = state.data.map((p) =>
+            p._id === updated._id ? updated : p
+          );
+        }
+
+        state.addProblemData = updated;
+        state.cache = {};
+      })
+      .addCase(editProblem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      /* -------- RUN FIXED -------- */
+      .addCase(runProblem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.runResult = null; // reset before new run
+      })
+      .addCase(runProblem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.runResult = action.payload;
+      })
+      .addCase(runProblem.rejected, (state, action) => {
+        state.loading = false;
+
+        // IMPORTANT: send error to UI
+        state.runResult = {
+          stderr: action.payload?.message || "Server Error",
+          data: [],
+        };
+
+        state.error = action.payload;
+      });
   },
 });
+
+/* ------------------------ EXPORTS ------------------------ */
 
 export default problemSlice.reducer;
 
@@ -280,10 +309,10 @@ export const {
   setProblemData,
   updateProblemData,
   updateNestedProblemData,
+  updateFunctionSignature,
+  updateFunctionInputs,
   addToArray,
   removeFromArray,
   updateArrayItem,
   resetProblemData,
 } = problemSlice.actions;
-
-export { getProblems, addProblem, fetchProblem, editProblem };

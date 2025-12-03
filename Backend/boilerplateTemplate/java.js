@@ -14,66 +14,53 @@ export default function java_template(functionName, returnType, inputs) {
             throw new Error("Inputs must be an array.");
         }
 
-        // Detect DS types
-        let dsComment = "";
-        const inputTypes = inputs.map(i => i.type);
-        const unique = new Set(inputTypes);
+        let structs = "";
+        const types = new Set(inputs.map(i => i.type));
 
-        // Add ListNode comment
-        if (unique.has("ListNode")) {
-            dsComment += `// Definition for singly-linked list.\n`;
-            dsComment += `// class ListNode {\n`;
-            dsComment += `//     int val;\n`;
-            dsComment += `//     ListNode next;\n`;
-            dsComment += `//     ListNode() {}\n`;
-            dsComment += `//     ListNode(int val) { this.val = val; }\n`;
-            dsComment += `//     ListNode(int val, ListNode next) { this.val = val; this.next = next; }\n`;
-            dsComment += `// }\n\n`;
+        if (types.has("ListNode")) {
+            structs += `
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+    ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+}
+`;
         }
 
-        // Add TreeNode comment
-        if (unique.has("TreeNode")) {
-            dsComment += `// Definition for a binary tree node.\n`;
-            dsComment += `// class TreeNode {\n`;
-            dsComment += `//     int val;\n`;
-            dsComment += `//     TreeNode left;\n`;
-            dsComment += `//     TreeNode right;\n`;
-            dsComment += `//     TreeNode() {}\n`;
-            dsComment += `//     TreeNode(int val) { this.val = val; }\n`;
-            dsComment += `//     TreeNode(int val, TreeNode left, TreeNode right) {\n`;
-            dsComment += `//         this.val = val;\n`;
-            dsComment += `//         this.left = left;\n`;
-            dsComment += `//         this.right = right;\n`;
-            dsComment += `//     }\n`;
-            dsComment += `// }\n\n`;
+        if (types.has("TreeNode")) {
+            structs += `
+class TreeNode {
+    int val;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int val) { this.val = val; }
+    TreeNode(int val, TreeNode left, TreeNode right) { 
+        this.val = val; 
+        this.left = left; 
+        this.right = right; 
+    }
+}
+`;
         }
 
-        // Validate return type
         const mappedReturn = java_mapper[returnType];
         if (!mappedReturn) {
             throw new Error(`Unsupported return type in Java: ${returnType}`);
         }
 
-        // Validate and map inputs
         const args = inputs
-            .map((inp) => {
-                if (!inp.name || !inp.type) {
-                    throw new Error("Each input must have 'name' and 'type'.");
-                }
-
+            .map(inp => {
                 const mappedType = java_mapper[inp.type];
-                if (!mappedType) {
-                    throw new Error(`Unsupported input type in Java: ${inp.type}`);
-                }
-
+                if (!mappedType) throw new Error(`Unsupported input type in Java: ${inp.type}`);
                 return `${mappedType} ${inp.name}`;
             })
             .join(", ");
 
         return `
-${dsComment}class Solution {
+${structs}
+class Solution {
     public ${mappedReturn} ${functionName}(${args}) {
-        // Write your code here
 
     }
 }

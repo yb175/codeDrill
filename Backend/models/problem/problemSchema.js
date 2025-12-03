@@ -80,9 +80,8 @@ const problemSchema = new Schema({
   hiddentestCases: [
     {
       testCase: {
-        type: String,
+        type: Schema.Types.Mixed,
         required: true,
-        trim: true,
         minlength: 1,
         maxlength: 200,
       },

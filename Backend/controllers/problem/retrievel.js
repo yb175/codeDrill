@@ -146,7 +146,7 @@ export async function getProblembyId(req, res) {
 
     // overwrite boilerplate with newly generated array
     problem.boilerplate = generated;
-
+    problem.functionSignature = sig ; 
     return res.status(200).json({
       success: true,
       data: problem,

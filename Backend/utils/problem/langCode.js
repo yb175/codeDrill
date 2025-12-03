@@ -12,7 +12,8 @@ function getLanguageCode(lang){
         "cpp": 54,
         "java": 62,
         "python": 71,
-        "python3": 71
+        "python3": 71,
+        "javascript": 80
     };
     return opt[lang.toLowerCase()];
 }

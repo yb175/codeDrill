@@ -32,9 +32,8 @@ const { Schema } = mongoose;
  */
 const visibleCaseSchema = new Schema({
   testCase: {
-    type: String,
+    type: Schema.Types.Mixed,
     required: true,
-    trim: true,
     minlength: 1,
     maxlength: 200,
   },

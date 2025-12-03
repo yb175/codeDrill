@@ -7,6 +7,8 @@ export default function ProblemDetails({
   title,
   breadcrumbs,
   tags,
+
+  // backend objects
   description,
   examples,
   hints,
@@ -17,13 +19,14 @@ export default function ProblemDetails({
   return (
     <div className="space-y-6">
       
+      {/* HEADER */}
       <ProblemHeader
         title={title}
         tags={tags}
         breadcrumbs={breadcrumbs}
       />
 
-      {/* Tabs */}
+      {/* TABS */}
       <div className="border-b border-gray-700">
         <nav className="flex space-x-4">
 
@@ -52,17 +55,17 @@ export default function ProblemDetails({
         </nav>
       </div>
 
-      {/* Content */}
+      {/* CONTENT */}
       {activeTab === "description" && (
         <DescriptionView
-          description={description}
-          examples={examples}
+          description={description}      // PASS FULL OBJECT
+          visibleTestCases={examples}     // MATCHING DESCRIPTIONVIEW API
           hints={hints}
         />
       )}
 
       {activeTab === "discussions" && (
-        <DiscussionsView discussions={discussions} />
+        <DiscussionsView discussions={discussions || []} />
       )}
 
     </div>

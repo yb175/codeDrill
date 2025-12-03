@@ -8,5 +8,5 @@ import ratelimiter from "../middlewares/ratelimiter.js";
 const submissionRouter = express.Router();
 
 submissionRouter.post("/",checkBlackList,ratelimiter,fetchProblem,submitCode); 
-submissionRouter.get("/run",ratelimiter,fetchProblem,runcode) ;
+submissionRouter.post("/run",ratelimiter,fetchProblem,runcode) ;
 export default submissionRouter;

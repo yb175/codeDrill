@@ -8,50 +8,60 @@ import EditorPanel from "./editorPanel";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 /* ======================================================
-   CUTE SHIMMER (kept same, only polished)
+   CUTE SHIMMER (Bluish Glass Theme)
 ======================================================= */
 const CuteShimmer = () => (
-  <div className="w-full animate-pulse">
+  <div className="w-full animate-pulse p-4">
     <div className="space-y-4">
-      <div className="h-6 w-2/3 rounded-lg bg-[#1f2937]" />
-      <div className="h-4 w-1/3 rounded-lg bg-[#1e293b]" />
-      <div className="h-32 w-full rounded-xl bg-[#1f2937]" />
+      {/* Header bars */}
+      <div className="h-8 w-2/3 rounded-lg bg-slate-800/50" />
+      <div className="h-4 w-1/3 rounded-lg bg-slate-800/30" />
+      
+      {/* Big description block */}
+      <div className="h-40 w-full rounded-xl bg-slate-800/20 border border-white/5" />
 
+      {/* Two smaller blocks (Test cases) */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="h-24 rounded-xl bg-[#1e293b]" />
-        <div className="h-24 rounded-xl bg-[#1e293b]" />
+        <div className="h-24 rounded-xl bg-slate-800/30 border border-white/5" />
+        <div className="h-24 rounded-xl bg-slate-800/30 border border-white/5" />
       </div>
 
-      <div className="space-y-2 pt-2">
-        <div className="h-4 w-full rounded-md bg-[#1f2937]" />
-        <div className="h-4 w-5/6 rounded-md bg-[#1f2937]" />
-        <div className="h-4 w-2/3 rounded-md bg-[#1f2937]" />
+      {/* Text lines */}
+      <div className="space-y-3 pt-4">
+        <div className="h-3 w-full rounded-md bg-slate-800/40" />
+        <div className="h-3 w-5/6 rounded-md bg-slate-800/40" />
+        <div className="h-3 w-4/6 rounded-md bg-slate-800/40" />
       </div>
     </div>
   </div>
 );
 
 /* ======================================================
-   ERROR UI — Beautiful & Safe
+   ERROR UI — Glassy Red
 ======================================================= */
 const ErrorState = ({ message, onRetry }) => (
-  <div className="flex flex-col items-center justify-center text-center gap-4 p-8 h-full w-full bg-[#111111] text-gray-300">
-    <AlertCircle className="h-10 w-10 text-red-400" />
+  <div className="flex flex-col items-center justify-center text-center gap-4 p-8 h-full w-full bg-slate-950 text-slate-300 relative overflow-hidden">
+    {/* Background Glow */}
+    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(239,68,68,0.1),transparent_50%)] pointer-events-none" />
 
-    <div>
-      <h2 className="text-lg font-semibold text-red-400 mb-1">Failed to Load Problem</h2>
-      <p className="text-sm text-gray-500 max-w-sm">
-        {message || "Something went wrong while fetching the problem."}
-      </p>
+    <div className="z-10 bg-slate-900/50 p-8 rounded-2xl border border-red-500/20 backdrop-blur-md">
+        <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-4" />
+
+        <div>
+        <h2 className="text-lg font-semibold text-red-400 mb-1">Failed to Load Problem</h2>
+        <p className="text-sm text-slate-500 max-w-sm">
+            {message || "Something went wrong while fetching the problem."}
+        </p>
+        </div>
+
+        <button
+        onClick={onRetry}
+        className="mt-6 flex items-center justify-center gap-2 px-6 py-2 text-sm font-medium rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all duration-300"
+        >
+        <RefreshCw className="w-4 h-4" />
+        Retry
+        </button>
     </div>
-
-    <button
-      onClick={onRetry}
-      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded bg-red-600 hover:bg-red-700 transition"
-    >
-      <RefreshCw className="w-4 h-4" />
-      Retry
-    </button>
   </div>
 );
 
@@ -67,19 +77,19 @@ export default function ProblemWorkspace() {
   }, [id]);
 
   /* ======================================================
-     LOADING STATE
+      LOADING STATE
   ======================================================= */
   if (loading) {
     return (
-      <main className="flex h-full overflow-hidden p-6 gap-6">
+      <main className="flex h-screen w-full overflow-hidden bg-slate-950 p-6 gap-6">
         <div className="flex-1"><CuteShimmer /></div>
-        <div className="hidden lg:block w-1/2"><CuteShimmer /></div>
+        <div className="hidden lg:block w-1/2 border-l border-white/5 pl-6"><CuteShimmer /></div>
       </main>
     );
   }
 
   /* ======================================================
-     ERROR STATE (FULLY SAFE)
+      ERROR STATE
   ======================================================= */
   if (error || !problem) {
     const msg =
@@ -96,13 +106,16 @@ export default function ProblemWorkspace() {
   }
 
   /* ======================================================
-     MAIN RENDER
+      MAIN RENDER
   ======================================================= */
   return (
-    <main className="flex h-screen w-full text-white overflow-hidden bg-[#0d0d0d]">
+    <main className="flex h-screen w-full text-slate-300 overflow-hidden bg-slate-950 relative">
+      
+      {/* GLOBAL BACKGROUND GLOW (Matches ProblemDetails) */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.15),transparent_50%)] pointer-events-none z-0" />
 
       {/* LEFT: PROBLEM DETAILS */}
-      <div className="flex-1 overflow-y-scroll p-4 md:p-6 lg:w-1/2">
+      <div className="flex-1 h-full z-10 md:pl-2">
         <ProblemDetails
           title={problem.title}
           breadcrumbs={[
@@ -115,14 +128,14 @@ export default function ProblemWorkspace() {
               name: problem.difficulty,
               color:
                 problem.difficulty === "easy"
-                  ? "bg-green-700/20 text-green-400"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   : problem.difficulty === "medium"
-                  ? "bg-yellow-700/20 text-yellow-400"
-                  : "bg-red-700/20 text-red-400",
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20",
             },
             ...(problem.problemTags || []).map((t) => ({
               name: t,
-              color: "bg-gray-700/20 text-gray-400",
+              color: "bg-slate-800/50 text-slate-400 border border-white/5",
             })),
           ]}
           description={problem.description}
@@ -138,7 +151,8 @@ export default function ProblemWorkspace() {
       </div>
 
       {/* RIGHT: EDITOR */}
-      <div className="hidden lg:flex flex-col flex-1 border-l border-gray-700 lg:w-1/2 overflow-y-hidden">
+      {/* Added z-10 to sit above background, and border-white/5 for glass effect */}
+      <div className="hidden lg:flex flex-col flex-1 h-full border-l border-white/5 lg:w-1/2 overflow-hidden z-10 bg-slate-950/30 backdrop-blur-sm">
         <EditorPanel
           boilerplates={problem.boilerplate || []}
           problem={problem}

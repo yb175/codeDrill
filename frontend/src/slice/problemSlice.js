@@ -33,6 +33,7 @@ export const getProblems = createAsyncThunk(
 export const addProblem = createAsyncThunk(
   "problems/add",
   async (problem, { rejectWithValue }) => {
+    console.log(problem);
     try {
       const res = await axiosClient.post(`/problems`, problem);
       return res.data;
@@ -228,13 +229,24 @@ const problemSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
+      /* -------- FETCH -------- */
       .addCase(fetchProblem.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
 
         const d = action.payload.data || {};
+
+        // FIX: Merge with emptyForm so boilerplate structure always exists
         state.addProblemData = {
-          ...d,
+          ...state.addProblemData, // keep existing or use emptyForm
+          ...d, // overwrite with fetched data
+
+          // Ensure nested objects exist if missing from backend
+          boilerplate:
+            d.boilerplate ||
+            state.addProblemData.boilerplate ||
+            emptyForm.boilerplate,
+
           visibleTestCases: (d.visibleTestCases || []).map((t) => ({
             ...t,
             isNew: false,
@@ -296,7 +308,7 @@ const problemSlice = createSlice({
           data: [],
         };
 
-        state.error = action.payload;
+        state.error = action.payload?.message || "Server Error";
       });
   },
 });

@@ -12,45 +12,50 @@ import { ChevronDown, ChevronRight, Code2 } from "lucide-react";
 export default function SolutionEditor() {
   const dispatch = useDispatch();
 
+  // Backend refrenceSol
   const refrenceSol =
-    useSelector((state) => state.problem.addProblemData.refrenceSol) || [];
+    useSelector((state) => state.problem.addProblemData?.refrenceSol) || [];
 
+  // FIXED: use "cpp" key instead of "c++"
   const languages = [
     { label: "Python3", key: "python", ext: python },
     { label: "JavaScript", key: "javascript", ext: javascript },
-    { label: "C++", key: "c++", ext: cpp },
+    { label: "C++", key: "cpp", ext: cpp },
   ];
 
   const [openLang, setOpenLang] = useState("python");
-
-  // Local state for editor values
   const [localSnippets, setLocalSnippets] = useState({});
 
+  // -------- DEFAULT SNIPPET BUILDER --------
   const getDefaultSnippet = (lang) => {
-    const existing = refrenceSol.find((s) => s.language === lang);
+    const existing =
+      Array.isArray(refrenceSol) &&
+      refrenceSol.find((s) => s.language === lang);
+
     if (existing) return existing.snippet;
 
     switch (lang) {
       case "python":
-        return `class Solution:\n    def solve(self):\n        pass`;
+        return ``;
       case "javascript":
-        return `function solve() {\n  \n}`;
-      case "c++":
-        return `#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n  \n}\n\nint main(){ return 0; }`;
+        return ``;
+      case "cpp":
+        return ``;
       default:
         return "";
     }
   };
 
-  // Hydrate local state from Redux on edit page load
+  // -------- LOAD BACKEND VALUES INTO EDITORS --------
   useEffect(() => {
-    const initialState = {};
+    const initial = {};
     languages.forEach((lang) => {
-      initialState[lang.key] = getDefaultSnippet(lang.key);
+      initial[lang.key] = getDefaultSnippet(lang.key);
     });
-    setLocalSnippets(initialState);
-  }, []);
+    setLocalSnippets(initial);
+  }, [refrenceSol]); // FIXED: update when backend data arrives
 
+  // -------- HANDLE CODE CHANGE --------
   const handleChange = (lang, value) => {
     setLocalSnippets((prev) => ({ ...prev, [lang]: value }));
 
@@ -111,7 +116,7 @@ export default function SolutionEditor() {
                   <div className="p-3 pt-0 border-t border-neutral-700/40">
                     <div className="rounded-lg overflow-hidden border border-neutral-700/50">
                       <CodeMirror
-                        value={localSnippets[lang.key] || ""}
+                        value={localSnippets[lang.key] || ""} // SAFE
                         height="250px"
                         theme={dracula}
                         extensions={[lang.ext()]}

@@ -72,73 +72,123 @@ import validateProblemUpdate from "../../utils/problem/validateProblemUpdate.js"
 async function editProblem(req, res) {
   try {
     const edited = req.body;
-    if (!edited)
-      res.status(404).send({
+
+    if (!edited) {
+      return res.status(404).send({
         success: false,
         message: "No fields were provided for editing",
       });
+    }
+
     if (!edited.problemNumber) {
-      res.status(404).send({
+      return res.status(404).send({
         success: false,
         message: "No problem number provided",
       });
     }
+
     let {
       problemTags,
-      comapnyTags,
+      companyTags,
       visibleTestCases,
       hiddentestCases,
-      refrenceSol,
+      refrenceSol,   // ARRAY of languages
       problemNumber,
     } = edited;
-    const tobeUpdated = [
+
+    const allowedFields = [
       "problemTags",
       "companyTags",
       "visibleTestCases",
       "hiddentestCases",
       "refrenceSol",
     ];
-    const canUpdate = tobeUpdated.find(
-      (fields) => edited[fields] !== undefined
+
+    const canUpdate = allowedFields.some(
+      (field) => edited[field] !== undefined
     );
+
     if (!canUpdate) {
-      res.status(400).send({
+      return res.status(400).send({
         success: false,
         message: "Invalid fields",
       });
     }
-    // DB call
+
     const problem = await problemModel.findOne({ problemNumber });
+    if (!problem) {
+      return res.status(404).send({
+        success: false,
+        message: `Problem ${problemNumber} not found`,
+      });
+    }
+
+    // ⭐ PICK ONE LANGUAGE SNIPPET FOR VALIDATION
+    let snippetToValidate = null;
+
+    if (Array.isArray(refrenceSol)) {
+      const cpp = refrenceSol.find((s) => s.language === "cpp");
+      const js = refrenceSol.find((s) => s.language === "javascript");
+      const py = refrenceSol.find((s) => s.language === "python");
+
+      snippetToValidate =
+        cpp?.snippet || js?.snippet || py?.snippet || null;
+    } else {
+      snippetToValidate = refrenceSol || null;
+    }
+
+    // Only validate IF user provided new testcases or new refsol
     if (visibleTestCases || hiddentestCases || refrenceSol) {
-       
       const testCases = [
         ...(visibleTestCases || []),
         ...(hiddentestCases || []),
       ];
-      refrenceSol = refrenceSol || problem.refrenceSol;
-      const result = await validateProblemUpdate({ refrenceSol, testCases });
-      if (result.success == false) {
-        res.status(200).send(result);
+
+      const result = await validateProblemUpdate({
+        refrenceSol: snippetToValidate,
+        testCases,
+      });
+
+      if (result.success === false) {
+        return res.status(200).send(result);
       }
     }
+
+    // UPDATE DB → referenceSol stored as array (multi-language)
+    if (Array.isArray(refrenceSol)) {
+      problem.refrenceSol = refrenceSol;
+    }
+
     problem.companyTags = Array.from(
-      new Set([...(comapnyTags || []), ...(problem.companyTags || [])])
+      new Set([...(companyTags || []), ...(problem.companyTags || [])])
     );
+
     problem.problemTags = Array.from(
       new Set([...(problemTags || []), ...(problem.problemTags || [])])
     );
-    if (visibleTestCases) problem.visibleTestCases = Array.from(new Set([...visibleTestCases,...(problem.visibleTestCases || [])]));
-    if (hiddentestCases) problem.hiddentestCases = Array.from(new Set([...hiddentestCases,...(problem.hiddentestCases || [])]));
-    if (refrenceSol) problem.refrenceSol = refrenceSol;
+
+    if (visibleTestCases) {
+      problem.visibleTestCases = [
+        ...new Set([...(problem.visibleTestCases || []), ...visibleTestCases]),
+      ];
+    }
+
+    if (hiddentestCases) {
+      problem.hiddentestCases = [
+        ...new Set([...(problem.hiddentestCases || []), ...hiddentestCases]),
+      ];
+    }
+
     await problem.save();
-    res.status(200).send({
+
+    return res.status(200).send({
       success: true,
       message: `problem statement ${problemNumber} updated successfully`,
       data: problem,
     });
   } catch (err) {
-    res.status(500).send({ success: false, message: err.message });
+    return res.status(500).send({ success: false, message: err.message });
   }
 }
 
-export default editProblem;
+export default editProblem; 

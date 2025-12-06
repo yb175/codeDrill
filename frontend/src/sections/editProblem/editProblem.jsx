@@ -21,8 +21,8 @@ export default function EditProblemPage() {
 
   // Fetch problem when page loads
   useEffect(() => {
-    dispatch(resetProblemData());     // clear old leftover data
     dispatch(fetchProblem(id));       // fetch data for this problem
+    console.log("Fetching data for problem:", addProblemData);
   }, [dispatch, id]);
 
   return (

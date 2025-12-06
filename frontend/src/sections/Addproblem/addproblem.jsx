@@ -16,43 +16,28 @@ export default function AddProblemPage() {
     dispatch(resetProblemData());
   }, [dispatch]);
 
-  const { loading, error } = useSelector((state) => state.problem);
-
   return (
     <div className="min-h-screen p-8 text-base-content mt-10">
 
-      {/* Loading State */}
-      {loading ? (
-        <div className="text-center text-gray-400 py-20">
-          Loading...
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* LEFT */}
+        <div className="flex flex-col gap-6">
+          <ProblemDetailsForm />
+          <PageActions isEditMode={false} />
         </div>
-      ) : error ? (
-        <div className="text-center text-red-400 py-20">
-          Something went wrong. Try again.
+
+        {/* RIGHT */}
+        <div className="flex flex-col gap-6">
+          <SolutionEditor />
+          <ExecutionOutput isEditMode={false} />
         </div>
-      ) : (
-        <>
-          {/* MAIN GRID (Same as Edit Page) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {/* LEFT COLUMN */}
-            <div className="flex flex-col gap-6">
-              <ProblemDetailsForm />
-              <PageActions isEditMode={false} />
-            </div>
+      </div>
 
-            {/* RIGHT COLUMN */}
-            <div className="flex flex-col gap-6">
-              <SolutionEditor />
-              <ExecutionOutput isEditMode={false} />
-            </div>
+      <div className="pb-24"></div>
 
-          </div>
-
-          {/* Extra padding bottom for buttons */}
-          <div className="pb-24"></div>
-        </>
-      )}
     </div>
   );
 }
+

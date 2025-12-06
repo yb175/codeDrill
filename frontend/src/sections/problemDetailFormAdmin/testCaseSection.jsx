@@ -152,7 +152,7 @@ export default function TestCasesSection() {
   const { visibleTestCases = [], hiddentestCases = [] } = useSelector(
     (state) => state.problem.addProblemData
   );
-
+  console.log(visibleTestCases, hiddentestCases);
   const [hiddenDrawerOpen, setHiddenDrawerOpen] = useState(false);
 
   // --- ACTIONS ---

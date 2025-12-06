@@ -61,12 +61,14 @@ export const editProblem = createAsyncThunk(
     try {
       const clean = {
         ...problem,
-        visibleTestCases: problem.visibleTestCases
-          .filter((t) => t?.isNew)
-          .map((t) => ({ ...t, isNew: undefined })),
-        hiddentestCases: problem.hiddentestCases
-          .filter((t) => t?.isNew)
-          .map((t) => ({ ...t, isNew: undefined })),
+        visibleTestCases: problem.visibleTestCases.map((t) => ({
+          ...t,
+          isNew: undefined,
+        })),
+        hiddentestCases: problem.hiddentestCases.map((t) => ({
+          ...t,
+          isNew: undefined,
+        })),
       };
 
       const res = await axiosClient.patch(`/problems`, clean);
@@ -76,6 +78,7 @@ export const editProblem = createAsyncThunk(
     }
   }
 );
+
 
 /* ------------------ FIXED runProblem ------------------ */
 
